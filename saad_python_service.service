@@ -1,0 +1,12 @@
+[Unit]
+Description=SAAD Monitoring Service
+
+[Service]
+# Command to execute when the service is started
+ExecStart=/usr/bin/python3 /home/ec2-user/saad/init.py --port 80
+Environment=PYTHONUNBUFFERED=1
+User=saad_python_service
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
