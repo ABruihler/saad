@@ -19,16 +19,16 @@ args = parser.parse_args()
 httpd = None
 
 def update_self(server, script_location, script_args):
-    print('updating self')
+    print('RESTARTING')
 
-    print('shutting down http server')
+    print('shutting down http server...')
     server.shutdown()
     server.server_close()
 
-    print('pulling new code from git')
-#   os.system('git pull')
+    print('pulling new code from git...')
+    os.system('git pull')
 
-    print('starting new code')
+    print('starting new code...')
     os.execv(script_location, script_args)
 
 class Handler(http.server.BaseHTTPRequestHandler):
