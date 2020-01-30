@@ -20,3 +20,12 @@ sudo useradd -r -s /bin/false saad_python_service
 sudo systemctl enable /home/saad_python_service/saad/saad_python_service.service
 sudo systemctl start saad_python_service
 ```
+
+To update server code and restart service:
+
+```
+cd /home/saad_python_service/saad/
+sudo -u saad_python_service git pull
+sudo systemctl daemon-reload
+sudo systemctl restart saad_python_service
+```
