@@ -41,7 +41,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
-        self.wfile.write('hello world 2.0\n\n'.encode())
+        self.wfile.write('hello world 3.0\n\n'.encode())
 
         self.wfile.write(('path: ' + self.path).encode())
 
