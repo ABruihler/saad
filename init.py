@@ -1,7 +1,11 @@
+#!/usr/bin/env python3
+
 import http.server
 import socketserver
 import argparse
 import os
+import sys
+import threading
 
 DEFAULT_PORT = 8080
 
@@ -11,6 +15,21 @@ parser.add_argument('--port',
         type=int, default=DEFAULT_PORT)
 
 args = parser.parse_args()
+
+httpd = None
+
+def update_self(server, script_location, script_args):
+    print('updating self')
+
+    print('shutting down http server')
+    server.shutdown()
+    server.server_close()
+
+    print('pulling new code from git')
+#   os.system('git pull')
+
+    print('starting new code')
+    os.execv(script_location, script_args)
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
@@ -30,9 +49,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write('success\n'.encode())
 
-            os.system('git pull')
+            threading.Thread(target=update_self, args=(httpd, __file__, sys.argv,)).start()
 
+socketserver.TCPServer.allow_reuse_address=True
+httpd = socketserver.TCPServer(('', args.port), Handler)
 
-with socketserver.TCPServer(('', args.port), Handler) as httpd:
-    print('server at port', args.port)
-    httpd.serve_forever()
+print('server at port', args.port)
+httpd.serve_forever()
