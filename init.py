@@ -1,6 +1,7 @@
 import http.server
 import socketserver
 import argparse
+import os
 
 DEFAULT_PORT = 8080
 
@@ -19,6 +20,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write('hello world\n\n'.encode())
 
         self.wfile.write(('path: ' + self.path).encode())
+
+    def do_POST(self):
+        request_path = self.path
+
+        if request_path == '/update':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write('success\n'.encode())
+
+            os.system('git pull')
+
 
 with socketserver.TCPServer(('', args.port), Handler) as httpd:
     print('server at port', args.port)
