@@ -25,6 +25,8 @@ def update_self(server, script_location, script_args):
     server.shutdown()
     server.server_close()
 
+    print('current directory:', os.getcwd())
+
     print('pulling new code from git...')
     os.system('git pull')
 
