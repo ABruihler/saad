@@ -1,7 +1,11 @@
+#!/usr/bin/env python3
+
 import http.server
 import socketserver
 import argparse
 import os
+import sys
+import threading
 
 DEFAULT_PORT = 8080
 
@@ -12,12 +16,32 @@ parser.add_argument('--port',
 
 args = parser.parse_args()
 
+httpd = None
+
+def update_self(server, script_location, script_args):
+    print('RESTARTING')
+
+    print('shutting down http server...')
+    server.shutdown()
+    server.server_close()
+
+    print('current directory:', os.getcwd())
+    print('making sure we are in current directory...')
+    os.chdir(os.path.dirname(os.path.abspath(script_location)))
+    print('current directory:', os.getcwd())
+
+    print('pulling new code from git...')
+    os.system('git pull')
+
+    print('starting new code...')
+    os.execv(script_location, script_args)
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
-        self.wfile.write('hello world\n\n'.encode())
+        self.wfile.write('hello world 4.0\n\n'.encode())
 
         self.wfile.write(('path: ' + self.path).encode())
 
@@ -30,9 +54,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write('success\n'.encode())
 
-            os.system('git pull')
+            threading.Thread(target=update_self, args=(httpd, __file__, sys.argv,)).start()
 
+socketserver.TCPServer.allow_reuse_address=True
+httpd = socketserver.TCPServer(('', args.port), Handler)
 
-with socketserver.TCPServer(('', args.port), Handler) as httpd:
-    print('server at port', args.port)
-    httpd.serve_forever()
+print('server at port', args.port)
+httpd.serve_forever()
