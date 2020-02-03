@@ -4,7 +4,7 @@ Description=SAAD Monitoring Service
 [Service]
 # Command to execute when the service is started
 # using firewalld to forward port 80 to 8080
-ExecStart=/usr/bin/python3 /home/saad_python_service/saad/init.py --port 8080
+ExecStart=/home/saad_python_service/saad/init.py --port 8080
 Environment=PYTHONUNBUFFERED=1
 User=saad_python_service
 Restart=on-failure
