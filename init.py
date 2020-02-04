@@ -6,6 +6,8 @@ import argparse
 import os
 import sys
 import threading
+import json
+import tempfile
 
 DEFAULT_PORT = 8080
 
@@ -17,6 +19,8 @@ parser.add_argument('--port',
 args = parser.parse_args()
 
 httpd = None
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 def update_self(server, script_location, script_args):
     print('RESTARTING')
@@ -49,12 +53,64 @@ class Handler(http.server.BaseHTTPRequestHandler):
         request_path = self.path
 
         if request_path == '/update':
+            # Updates SAAD's code by pulling from git and restarting
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
-            self.wfile.write('success\n'.encode())
+            self.wfile.write('updating...\n'.encode())
 
             threading.Thread(target=update_self, args=(httpd, __file__, sys.argv,)).start()
+        elif request_path == '/run':
+            # Git webhook for running SAAD on a repo
+            if self.headers.get('content-type') != 'application/json':
+                self.send_response(415)
+                self.send_header('Content-type', 'text/plain')
+                self.end_headers()
+                self.wfile.write('request must have content-type application/json\n'.encode())
+                return
+
+            content_length = int(self.headers['Content-Length'])
+            body = self.rfile.read(content_length)
+
+            try:
+                params = json.loads(body.decode('utf-8'))
+            except ValueError:
+                self.send_response(415)
+                self.send_header('Content-type', 'text/plain')
+                self.end_headers()
+                self.wfile.write('data must be json\n'.encode())
+                return
+
+            try:
+                ref = params['ref']
+                previous_commit = params['before']
+                current_commit = params['after']
+                clone_url = params['repository']['clone_url']
+            except KeyError:
+                self.send_response(415)
+                self.send_header('Content-type', 'text/plain')
+                self.end_headers()
+                self.wfile.write('data must be from Github webhook\n'.encode())
+                return
+
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write('running...\n'.encode())
+
+            with tempfile.TemporaryDirectory() as previous_dirname:
+                with tempfile.TemporaryDirectory() as current_dirname:
+                    os.chdir(previous_dirname)
+                    os.system('git clone ' + clone_url + ' .')
+                    os.system('git checkout ' + previous_commit)
+
+                    os.chdir(current_dirname)
+                    os.system('git clone ' + clone_url + ' .')
+                    os.system('git checkout ' + current_commit)
+
+                    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+            print(clone_url, ref, previous_commit, current_commit)
 
 socketserver.TCPServer.allow_reuse_address=True
 httpd = socketserver.TCPServer(('', args.port), Handler)
