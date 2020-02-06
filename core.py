@@ -1,6 +1,11 @@
 import json
-def parseProbeFile():
-    return True
+
+def parseProbeFile(probeFilePath):
+    probeConfigFile = open(probeFilePath, 'r')
+    probe = probeConfigFile.read()
+    probeConfigFile.close()
+
+    return json.loads(probe)
 
 def iterateOverProbes():
     return True
