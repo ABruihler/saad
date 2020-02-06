@@ -1,0 +1,17 @@
+{
+"targetType" : "file",
+"target" : "core.py",
+"probes":{
+    "codeChange" : {
+        "script": "scripts/probes/filechange.py",
+        "arguments" : {},
+    }
+},
+"actuators":{
+    "email" : {
+        "script": "scripts/acuators/emailactuator.py",
+        "arguments": {"address": "whited@carleton.edu", "name": "David"},
+    }
+
+}
+}
