@@ -41,11 +41,13 @@ def update_self(server, script_location, script_args):
     os.execv(script_location, script_args)
 
 class Handler(http.server.BaseHTTPRequestHandler):
+    timeout = 5
+
     def do_GET(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
-        self.wfile.write('hello world 4.0\n\n'.encode())
+        self.wfile.write('saad server :\'(\n\n'.encode())
 
         self.wfile.write(('path: ' + self.path).encode())
 
@@ -112,8 +114,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
             print(clone_url, ref, previous_commit, current_commit)
 
-socketserver.TCPServer.allow_reuse_address=True
-httpd = socketserver.TCPServer(('', args.port), Handler)
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    timeout = 5
+    allow_reuse_address = True
+
+httpd = ThreadedTCPServer(('', args.port), Handler)
 
 print('server at port', args.port)
 httpd.serve_forever()
