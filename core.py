@@ -5,7 +5,7 @@ import importlib
 import subprocess
 import shlex
 
-def parseProbeFile(probe_file_path):
+def parse_probe_file(probe_file_path):
     with open(probe_file_path, 'r') as probe_config_file:
         probe_file_contents = probe_config_file.read()
 
@@ -24,7 +24,7 @@ def iterate_over_probe_files(current_commit_dir):
     pathlist = Path(probes_dir).glob('**/*.json')
 
     for path in pathlist:
-        path_str = str(path) # According to stack overflow, path isn't a string
+        path_str = str(path)
         handle_probe_file(path_str)
 
 def runActuatorScript():
