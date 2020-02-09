@@ -5,10 +5,10 @@ import importlib
 import subprocess
 import shlex
 
-def parseProbeFile(probeFilePath):
-    probeConfigFile = open(probeFilePath, 'r')
-    probe = probeConfigFile.read()
-    probeConfigFile.close()
+def parseProbeFile(probe_file_path):
+    with open(probe_file_path, 'r') as probe_config_file:
+        probe = probe_config_file.read()
+
     return json.loads(probe)
 
 def iterate_over_probes(current_commit_dir):
