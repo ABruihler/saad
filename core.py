@@ -5,13 +5,19 @@ import importlib
 import subprocess
 import shlex
 
-def parseProbeFile(probeFilePath):
-    probeConfigFile = open(probeFilePath, 'r')
-    probe = probeConfigFile.read()
-    probeConfigFile.close()
-    return json.loads(probe)
+def parse_probe_file(file_path):
+    probe_file = open(file_path, 'r')
+    probe_file_contents = probe_file.read()
+    probe_file.close()
 
-def iterate_over_probes(current_commit_dir):
+    return json.loads(probe_file_contents)
+
+def handle_probe_file(file_path):
+	print('Handling ', file_path)
+	parsed = parse_probe_file(file_path)
+	print(parsed)
+
+def iterate_over_probe_files(current_commit_dir):
 	probes_dir = os.path.join(current_commit_dir, 'probes')
 
 	# Search recursively in order to allow user to decide
@@ -19,8 +25,8 @@ def iterate_over_probes(current_commit_dir):
 	pathlist = Path(probes_dir).glob('**/*.json')
 
 	for path in pathlist:
-		path_str = str(path)
-		print(path_str)
+		path_str = str(path) # According to stack overflow, path isn't a string
+		handle_probe_file(path_str)
 
 def runActuatorScript():
     return True
@@ -34,4 +40,4 @@ def runProbeScript(probeFile,target,args):
     output,error=script.communicate()
     return output
     
-iterateOverProbes()
+iterate_over_probe_files(os.path.dirname(os.path.abspath(__file__)))
