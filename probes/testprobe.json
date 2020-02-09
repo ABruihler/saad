@@ -3,7 +3,7 @@
     "target" : "core.py",
     "probes": {
         "codeChange" : {
-            "script": "scripts/probes/filechange.py",
+            "script": "python3 scripts/probes/filechange.py",
             "arguments" : {}
         }
     },
