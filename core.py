@@ -5,7 +5,7 @@ import importlib
 import subprocess
 import shlex
 
-def parseProbeFile(probe_file_path):
+def parse_probe_file(probe_file_path):
     with open(probe_file_path, 'r') as probe_config_file:
         probe_file_contents = probe_config_file.read()
 
