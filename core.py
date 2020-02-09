@@ -30,7 +30,9 @@ def iterate_over_probe_files(current_commit_dir):
 def runActuatorScript():
     return True
 
-def findProbeTarget():
+def findProbeTarget(config):
+    if(config['targetType']=='file'):
+        return {'last': 'last/'+config['target'],'current': 'current/'+config['target']}
     #Example: Run AST script
     return True
 
