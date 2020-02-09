@@ -5,10 +5,9 @@ import importlib
 import subprocess
 import shlex
 
-def parse_probe_file(file_path):
-    probe_file = open(file_path, 'r')
-    probe_file_contents = probe_file.read()
-    probe_file.close()
+def parse_probe_file(probe_file_path):
+    with open(probe_file_path, 'r') as probe_config_file:
+        probe_file_contents = probe_config_file.read()
 
     return json.loads(probe_file_contents)
 
