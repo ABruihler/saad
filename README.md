@@ -27,6 +27,7 @@ To leave the virtual environment:
 deactivate
 ```
 
+## Setting up Server
 
 Used this tutorial for setting up a service:
 <https://github.com/torfsen/python-systemd-tutorial>
