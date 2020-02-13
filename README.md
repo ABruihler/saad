@@ -1,6 +1,34 @@
 # saad
 A code monitoring tool being developed by students at Carleton College.
 
+## Getting Started
+First, create virtual environment for installing dependencies:
+
+```
+python3 -m venv env
+```
+
+Then, activate the virtual environment. You will do this whenever you start working on the project:
+
+```
+source env/bin/activate
+```
+
+To install dependencies:
+
+```
+python3 -m pip install -r requirements.txt
+```
+
+
+To leave the virtual environment:
+
+```
+deactivate
+```
+
+## Setting up Server
+
 Used this tutorial for setting up a service:
 <https://github.com/torfsen/python-systemd-tutorial>
 
