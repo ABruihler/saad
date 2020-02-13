@@ -57,3 +57,15 @@ sudo -u saad_python_service git pull
 sudo systemctl daemon-reload
 sudo systemctl restart saad_python_service
 ```
+
+### Ideas for AST
+I'm brainstorming syntax for specifying AST location (currently just for Python). Currently, I'm considering the following syntax:
+
+```
+class(TestClass) # matches class(es) named TestClass
+func(simple_function) # matches functions named simple_function
+
+class(TestClass) func(simple_function) # only functions inside the class
+class(TestClass) > func(simple_function) # only functions that are direct children of class (class methods)
+> func(simple_function) # only global functions (direct children of root)
+```
