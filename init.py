@@ -114,7 +114,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
                     # TODO: call
-                    core.iterate_over_probe_files(current_dirname, previous_dirname)
+                    # core.iterate_over_probe_files(current_dirname, previous_dirname)
                     # in core.py
 
             print(clone_url, ref, previous_commit, current_commit)
