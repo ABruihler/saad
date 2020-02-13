@@ -8,9 +8,10 @@
         }
     },
     "actuators": {
-        "email" : {
-            "script": "scripts/acuators/emailactuator.py",
-            "arguments": {"address": "whited@carleton.edu", "name": "David"}
+        "slackbot" : {
+            "script": "python3.8 actuators/slack_actuator.py",
+            "arguments": "xoxb-886016284897-930093429185-j1pYNWVnkCmkrGQGCUKPj3LX monitoring-status-reports 'Status report: David has successfully run a codechange Probe'"
+        
         }
     }
 }
