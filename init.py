@@ -38,6 +38,9 @@ def update_self(server, script_location, script_args):
     print('pulling new code from git...')
     os.system('git pull')
 
+    print('installing dependencies')
+    os.system('python3 -m pip install --user -r requirements.txt')
+
     print('starting new code...')
     os.execv(script_location, script_args)
 
