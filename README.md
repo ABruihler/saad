@@ -27,6 +27,19 @@ To leave the virtual environment:
 deactivate
 ```
 
+## Testing Locally
+
+### Making a fake Github webhook request
+
+Start the server then run the following command in your terminal (in the `saad` directory):
+
+```
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data-binary "@sample_webhook_request.json" \
+  http://localhost:8080/run
+```
+
 ## Setting up Server
 
 Used this tutorial for setting up a service:
@@ -57,6 +70,16 @@ sudo -u saad_python_service git pull
 sudo systemctl daemon-reload
 sudo systemctl restart saad_python_service
 ```
+
+To install Python (from source, since `yum` didn't have 3.8):
+
+```
+sudo yum install openssl-devel
+cd /home/ec2-user/Python-3.8.1/
+sudo ./configure --enable-optimizations
+sudo make install
+```
+
 
 ### Ideas for AST
 I'm brainstorming syntax for specifying AST location (currently just for Python). Currently, I'm considering the following syntax:

@@ -41,6 +41,22 @@ def update_self(server, script_location, script_args):
     print('starting new code...')
     os.execv(script_location, script_args)
 
+def run_on_git(clone_url, current_commit, previous_commit):
+    with tempfile.TemporaryDirectory() as previous_dirname:
+        with tempfile.TemporaryDirectory() as current_dirname:
+            os.chdir(previous_dirname)
+            os.system('git clone ' + clone_url + ' .')
+            os.system('git checkout ' + previous_commit)
+
+            os.chdir(current_dirname)
+            os.system('git clone ' + clone_url + ' .')
+            os.system('git checkout ' + current_commit)
+
+            os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+            # Run probes!
+            core.iterate_over_probe_files(current_dirname, previous_dirname)
+
 class Handler(http.server.BaseHTTPRequestHandler):
     timeout = 5
 
@@ -101,22 +117,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write('running...\n'.encode())
 
-            with tempfile.TemporaryDirectory() as previous_dirname:
-                with tempfile.TemporaryDirectory() as current_dirname:
-                    os.chdir(previous_dirname)
-                    os.system('git clone ' + clone_url + ' .')
-                    os.system('git checkout ' + previous_commit)
-
-                    os.chdir(current_dirname)
-                    os.system('git clone ' + clone_url + ' .')
-                    os.system('git checkout ' + current_commit)
-
-                    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
-                    # TODO: call
-                    # core.iterate_over_probe_files(current_dirname, previous_dirname)
-                    # in core.py
-
+            run_on_git(clone_url, previous_commit, current_commit)
             print(clone_url, ref, previous_commit, current_commit)
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):

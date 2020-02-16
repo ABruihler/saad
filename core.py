@@ -11,7 +11,7 @@ def parse_probe_file(probe_file_path):
 
     return json.loads(probe_file_contents)
 
-def handle_probe_file(file_path, current_commit_dir, last_commit_dir):
+def handle_probe_file(file_path, current_commit_dir, previous_commit_dir):
     print('Handling ', file_path)
     parsed = parse_probe_file(file_path)
     for probe in parsed['probes'].keys():
@@ -22,7 +22,7 @@ def handle_probe_file(file_path, current_commit_dir, last_commit_dir):
             for actuator in parsed['actuators'].values():
                 run_actuator_script(actuator['script'],actuator['arguments'])
 
-def iterate_over_probe_files(current_commit_dir, last_commit_dir):
+def iterate_over_probe_files(current_commit_dir, previous_commit_dir):
     probes_dir = os.path.join(current_commit_dir, 'probes')
 
     # Search recursively in order to allow user to decide
@@ -31,7 +31,7 @@ def iterate_over_probe_files(current_commit_dir, last_commit_dir):
 
     for path in pathlist:
         path_str = str(path)
-        handle_probe_file(path_str, current_commit_dir, last_commit_dir)
+        handle_probe_file(path_str, current_commit_dir, previous_commit_dir)
 
 def run_actuator_script(script, args):
     script=subprocess.Popen(shlex.split(script)+shlex.split(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
