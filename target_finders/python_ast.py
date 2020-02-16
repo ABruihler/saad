@@ -54,49 +54,37 @@ def node_to_string(node):
 
     return out
 
-class Visitor():
-    # def old_visit(self, node, deep=0):
-    #     """Called if no explicit visitor function exists for a node."""
-    #     prefix = '-' * deep
-    #     print(prefix + node_to_string(node))
+def visit_node(node, location):
+    target = location[0]
 
-    #     for field, value in iter_fields(node):
-    #         if isinstance(value, list):
-    #             for item in value:
-    #                 if isinstance(item, ast.AST):
-    #                     self.generic_visit(item, deep + 1)
-    #         elif isinstance(value, ast.AST):
-    #             self.generic_visit(value, deep + 1)
-
-    def visit(self, node, location):
-        target = location[0]
-
-        if target.type == 'class':
-            if isinstance(node, ast.ClassDef) and node.name == target.name:
-                location = location[1:]
-            elif target.direct_child:
-                return
-        elif target.type == 'func':
-            if isinstance(node, ast.FunctionDef) and node.name == target.name:
-                location = location[1:]
-            elif target.direct_child:
-                return
-
-        if len(location) == 0:
-            print(node)
+    if target.type == 'class':
+        if isinstance(node, ast.ClassDef) and node.name == target.name:
+            location = location[1:]
+        elif target.direct_child:
+            return
+    elif target.type == 'func':
+        if isinstance(node, ast.FunctionDef) and node.name == target.name:
+            location = location[1:]
+        elif target.direct_child:
             return
 
-        for field, value in iter_fields(node):
-            if isinstance(value, list):
-                for item in value:
-                    if isinstance(item, ast.AST):
-                        self.visit(item, location)
-            elif isinstance(value, ast.AST):
-                self.visit(value, location)
+    if len(location) == 0:
+        print(node)
+        print(':'.join(map(str, node.first_token.start)))
+        print(':'.join(map(str, node.last_token.end)))
+        return
+
+    for field, value in iter_fields(node):
+        if isinstance(value, list):
+            for item in value:
+                if isinstance(item, ast.AST):
+                    visit_node(item, location)
+        elif isinstance(value, ast.AST):
+            visit_node(value, location)
 
 with open(__file__, 'rb') as src_stream:
     source = src_stream.read()
     atok = asttokens.ASTTokens(source, parse=True)
-    visitor = Visitor()
-    location = parse_ast_location('class(Visitor) > func(visit)')
-    visitor.visit(atok.tree, location)
+    location = parse_ast_location('func(visit_node)')
+    # location = parse_ast_location('func(node_to_string)')
+    visit_node(atok.tree, location)
