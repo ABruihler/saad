@@ -29,7 +29,7 @@ def send_email(sender_mail, receiver_mail, message, smtp_server=SMTP_SERVER):
 def main():
     sender_mail = sys.argv[1] 
     receiver_mail = sys.argv[2]
-    message = sys.argv[3]
+    message = [sys.argv[3], sys.argv[4]]
 
     send_email(sender_mail, receiver_mail, message)
 
@@ -37,8 +37,8 @@ def main():
 if __name__ == "__main__":
     if sys.argv[1] == '-h' or sys.argv[1] == '--help':
         pass
-    if sys.argv.__len__() != 4:
-        print("Usage: mail_actuator.py [SMTP_SERVER] [SENDER_EMAIL_ADDRESS] [RECEIVER_EMAIL_ADDRESS] [MESSAGE]")
+    if sys.argv.__len__() != 5:
+        print("Usage: mail_actuator.py [SENDER_EMAIL_ADDRESS] [RECEIVER_EMAIL_ADDRESS] [MESSAGE_SUBJECT] [MESSAGE_BODY]")
     else:
         main()
 
