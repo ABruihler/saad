@@ -2,12 +2,34 @@ import json
 from pathlib import Path
 import subprocess
 import shlex
+import os
 
 def parse_json_file(file_path):
-    with open(probe_file_path, 'r') as probe_config_file:
+    with open(file_path, 'r') as probe_config_file:
         probe_file_contents = probe_config_file.read()
 
     return json.loads(probe_file_contents)
+
+def load_modules():
+    modules_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'modules')
+
+    # Search recursively in order to allow user to decide
+    # their preferred method of organization
+    pathlist = Path(modules_dir).glob('**/*.json')
+
+    modules = {}
+
+    for path in pathlist:
+        parsed = parse_json_file(str(path))
+        for key, value in parsed.items():
+            if key in modules:
+                raise ValueError('Duplicate module')
+
+            modules[key] = value
+
+    return modules
+
+modules = load_modules()
 
 def split_for_format(command):
     symbol = '%'
@@ -46,23 +68,26 @@ def insert_values(command, values):
     return output
 
 def populate_command(command, inputs, config, bound_values):
-    values = map(lambda key: config[key], inputs)
+    values = list(map(lambda key: config[key], inputs))
     return insert_values(command, values)
 
 def run_module(module_type, config, bound_values):
     module = modules[module_type]
 
-    script = subprocess.Popen(, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output, error = script.communicate()
-    error = error.decode('utf-8')
+    print(module['command'], module['inputs'], config, bound_values)
+    print(populate_command(module['command'], module['inputs'], config, bound_values))
 
-    if error != '':
-        print(error)
-        return False
-    else:
-        print(output)
+    # script = subprocess.Popen('g', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # output, error = script.communicate()
+    # error = error.decode('utf-8')
 
-    return True
+    # if error != '':
+    #     print(error)
+    #     return False
+    # else:
+    #     print(output)
+
+    # return True
 
 def handle_config(file_path, current_commit_dir, previous_commit_dir):
     print('Handling ', file_path)
@@ -97,3 +122,5 @@ print(split_for_format('echo % %'))
 print(insert_values('echo', []))
 print(insert_values('echo %', ['test string']))
 print(shlex.split(insert_values('echo % % % %', ['test string', 'rm -rf', "'", '; "blah"; rm -rf'])))
+
+iterate_over_configs(os.path.dirname(os.path.abspath(__file__)), os.path.dirname(os.path.abspath(__file__)))
