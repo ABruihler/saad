@@ -1,0 +1,15 @@
+[
+    {
+        "name": "fileContents",
+        "type": "readFile",
+        "config": {
+            "path": "README.md"
+        }
+    },
+    {
+        "type": "reverse",
+        "config": {
+            "string": "[fileContents]"
+        } 
+    }
+]

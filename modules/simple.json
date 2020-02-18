@@ -1,0 +1,10 @@
+{
+    "readFile": {
+        "command": "cat %",
+        "inputs": ["path"]
+    },
+    "reverse": {
+    	"command": "echo % | rev",
+    	"inputs": ["string"]
+    }
+}
