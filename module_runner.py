@@ -83,7 +83,7 @@ def handle_config(config, default_module_config):
 def iterate_over_configs(current_commit_dir, previous_commit_dir):
     path = os.path.join(current_commit_dir, 'monitoring')
 
-    # Default variables that can be accessed in monitoring configs
+    # Default variables that can be accessed in module definitions
     default_module_config = {
         'currDir': current_commit_dir,
         'prevDir': previous_commit_dir
