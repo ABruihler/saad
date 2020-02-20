@@ -3,7 +3,7 @@
         "name": "fileContents",
         "type": "readFile",
         "config": {
-            "path": "README.md"
+            "path": "{HEAD}/README.md"
         }
     },
     {

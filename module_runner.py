@@ -10,7 +10,7 @@ import re
 # Example: insert_named_valued('Hello {name}', {'name': 'Bob'})
 # -> 'Hello Bob'
 def insert_named_values(string, values):
-    return re.sub(r'{([a-zA-Z0-9_]+)}', lambda m: values[m.group(1)], string)
+    return re.sub(r'{([a-zA-Z0-9_~]+)}', lambda m: values[m.group(1)], string)
 
 def merge_two_dicts(x, y):
     z = x.copy() # Start with x's keys and values
@@ -71,25 +71,25 @@ def run_module(module_type, config, bound_values):
         print(output)
         return output
 
-def handle_config(config, default_module_config):
-    bound_values = {}
+def handle_config(config, default_variables):
+    bound_values = default_variables.copy()
 
     for module in config:
-        module_config = merge_two_dicts(default_module_config, module['config'])
-        output = run_module(module['type'], module['config'], bound_values)
+        module_config = merge_two_dicts(default_variables, module['config'])
+        output = run_module(module['type'], module_config, bound_values)
         if 'name' in module:
             bound_values[module['name']] = output
 
 def iterate_over_configs(current_commit_dir, previous_commit_dir):
     path = os.path.join(current_commit_dir, 'monitoring')
 
-    # Default variables that can be accessed in module definitions
-    default_module_config = {
-        'currDir': current_commit_dir,
-        'prevDir': previous_commit_dir
+    # Default variables that can be accessed in module/monitoring configs
+    default_variables = {
+        'HEAD': current_commit_dir,
+        'HEAD~1': previous_commit_dir
     }
 
     for config in all_json_in_dir(path):
-        handle_config(config, default_module_config)
+        handle_config(config, default_variables)
 
 iterate_over_configs(os.path.dirname(os.path.abspath(__file__)), os.path.dirname(os.path.abspath(__file__)))
