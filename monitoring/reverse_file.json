@@ -9,7 +9,7 @@
     {
         "type": "reverse",
         "config": {
-            "string": "[fileContents]"
+            "string": "{fileContents}"
         } 
     }
 ]
