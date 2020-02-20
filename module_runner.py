@@ -32,48 +32,8 @@ def load_modules():
 
 modules = load_modules()
 
-def split_for_format(command):
-    symbol = '%'
-    output = ['']
-
-    preceded_by_symbol = False
-    for char in command:
-        if char == symbol:
-            if preceded_by_symbol:
-                preceded_by_symbol = False
-                output[-1] += symbol
-            else:
-                preceded_by_symbol = True
-        else:
-            if preceded_by_symbol:
-                preceded_by_symbol = False
-                output.append('')
-            output[-1] += char
-
-    if preceded_by_symbol:
-        output.append('')
-
-    return output
-
-def insert_values(command, values):
-    split_command = split_for_format(command)
-
-    if len(split_command) != len(values) + 1:
-        raise ValueError('Invalid number of values for command')
-
-    output = split_command[0]
-
-    for value, rest in zip(values, split_command[1:]):
-        output += shlex.quote(value) + rest
-
-    return output
-
 def insert_named_values(string, values):
     return re.sub(r'{([a-zA-Z0-9_]+)}', lambda m: values[m.group(1)], string)
-
-def populate_command(command, inputs, config, bound_values):
-    values = list(map(lambda key: config[key], inputs))
-    return insert_values(command, values)
 
 def run_module(module_type, config, bound_values):
     module = modules[module_type]
@@ -116,16 +76,5 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
     for path in pathlist:
         path_str = str(path)
         handle_config(path_str, current_commit_dir, previous_commit_dir)
-
-print(split_for_format('echo'))
-print(split_for_format('echo %'))
-print(split_for_format('echo %%'))
-print(split_for_format('echo %%%'))
-print(split_for_format('echo %%%%'))
-print(split_for_format('echo % %'))
-
-print(insert_values('echo', []))
-print(insert_values('echo %', ['test string']))
-print(shlex.split(insert_values('echo % % % %', ['test string', 'rm -rf', "'", '; "blah"; rm -rf'])))
 
 iterate_over_configs(os.path.dirname(os.path.abspath(__file__)), os.path.dirname(os.path.abspath(__file__)))
