@@ -92,4 +92,5 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
     for config in all_json_in_dir(path):
         handle_config(config, default_variables)
 
-iterate_over_configs(os.path.dirname(os.path.abspath(__file__)), os.path.dirname(os.path.abspath(__file__)))
+if __name__ == "__main__":
+    iterate_over_configs(os.path.dirname(os.path.abspath(__file__)), os.path.dirname(os.path.abspath(__file__)))
