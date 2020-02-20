@@ -120,8 +120,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write('running...\n'.encode())
 
-            run_on_git(clone_url, previous_commit, current_commit)
-            print(clone_url, ref, previous_commit, current_commit)
+            run_on_git(clone_url, current_commit, previous_commit)
+            print(clone_url, ref, current_commit, previous_commit)
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     timeout = 5
