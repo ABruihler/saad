@@ -42,6 +42,12 @@ curl --header "Content-Type: application/json" \
 
 ## Setting up Server
 
+Command for connecting to server:
+
+```
+ssh -i /Users/skimberk1/Downloads/comps-project-aws.pem ec2-user@ec2-52-14-246-137.us-east-2.compute.amazonaws.com
+```
+
 Used this tutorial for setting up a service:
 <https://github.com/torfsen/python-systemd-tutorial>
 
