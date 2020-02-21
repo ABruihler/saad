@@ -8,7 +8,7 @@ import sys
 import threading
 import json
 import tempfile
-import core
+import module_runner
 
 DEFAULT_PORT = 8080
 
@@ -47,6 +47,7 @@ def update_self(server, script_location, script_args):
 def run_on_git(clone_url, current_commit, previous_commit):
     with tempfile.TemporaryDirectory() as previous_dirname:
         with tempfile.TemporaryDirectory() as current_dirname:
+            startdir=os.path.dirname(os.path.abspath(__file__))
             os.chdir(previous_dirname)
             os.system('git clone ' + clone_url + ' .')
             os.system('git checkout ' + previous_commit)
@@ -55,10 +56,9 @@ def run_on_git(clone_url, current_commit, previous_commit):
             os.system('git clone ' + clone_url + ' .')
             os.system('git checkout ' + current_commit)
 
-            os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
+            os.chdir(startdir)
             # Run probes!
-            core.iterate_over_probe_files(current_dirname, previous_dirname)
+            module_runner.iterate_over_configs(current_dirname, previous_dirname)
 
 class Handler(http.server.BaseHTTPRequestHandler):
     timeout = 5
@@ -120,8 +120,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write('running...\n'.encode())
 
-            run_on_git(clone_url, previous_commit, current_commit)
-            print(clone_url, ref, previous_commit, current_commit)
+            run_on_git(clone_url, current_commit, previous_commit)
+            print(clone_url, ref, current_commit, previous_commit)
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     timeout = 5

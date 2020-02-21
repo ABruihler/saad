@@ -1,15 +1,17 @@
 [
     {
-        "name": "fileContents",
-        "type": "readFile",
+        "name": "diff",
+        "type": "fileChange",
         "config": {
-            "path": "{HEAD}/README.md"
+            "file": "module_runner.py"
         }
     },
     {
-        "type": "reverse",
+        "type": "slackBot",
         "config": {
-            "string": "{fileContents}"
-        } 
+            "condition": "{diff}",
+            "channel": "monitoring-slack-test-public",
+            "message": "file module_runner.py changed"
+        }
     }
 ]
