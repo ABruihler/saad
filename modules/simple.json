@@ -4,5 +4,8 @@
     },
     "reverse": {
     	"command": "echo {string} | rev"
+    },
+    "checkComplexity": {
+        "command": "python scripts/probes/complexity.py {path} {target} {threshold}"
     }
 }
