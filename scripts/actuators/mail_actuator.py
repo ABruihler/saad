@@ -1,7 +1,6 @@
+import getpass
 import smtplib
 import sys
-import getpass
-
 from email.message import EmailMessage
 
 # should initialize the following on startup / in config:
@@ -9,8 +8,9 @@ from email.message import EmailMessage
 SMTP_SERVER = 'smtp.gmail.com'
 PORT = 465
 
+
 def send_email(sender_mail, receiver_mail, message, smtp_server=SMTP_SERVER):
-    password = getpass.getpass('Password: ') # temporary / for testing
+    password = getpass.getpass('Password: ')  # temporary / for testing
 
     msg = EmailMessage()
     msg.set_content(message[1])
@@ -27,7 +27,7 @@ def send_email(sender_mail, receiver_mail, message, smtp_server=SMTP_SERVER):
 
 
 def main():
-    sender_mail = sys.argv[1] 
+    sender_mail = sys.argv[1]
     receiver_mail = sys.argv[2]
     message = [sys.argv[3], sys.argv[4]]
 
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     if sys.argv[1] == '-h' or sys.argv[1] == '--help':
         pass
     if sys.argv.__len__() != 5:
-        print("Usage: mail_actuator.py [SENDER_EMAIL_ADDRESS] [RECEIVER_EMAIL_ADDRESS] [MESSAGE_SUBJECT] [MESSAGE_BODY]")
+        print(
+            "Usage: mail_actuator.py [SENDER_EMAIL_ADDRESS] [RECEIVER_EMAIL_ADDRESS] [MESSAGE_SUBJECT] [MESSAGE_BODY]")
     else:
         main()
-

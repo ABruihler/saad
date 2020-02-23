@@ -1,7 +1,8 @@
 import ast
-import asttokens
 import re
 from collections import namedtuple
+
+import asttokens
 
 token_sub_regex = r'[^\s\(\)]+'
 token_regex = r'^' + token_sub_regex + r'$'
@@ -9,6 +10,7 @@ named_token_regex = r'^(' + token_sub_regex + r')\((' + token_sub_regex + r')\)$
 
 Token = namedtuple('Token', 'type direct_child')
 NamedToken = namedtuple('NamedToken', 'type name direct_child')
+
 
 def parse_ast_location(location_str):
     tokens = location_str.split()
@@ -28,6 +30,7 @@ def parse_ast_location(location_str):
 
     return parsed
 
+
 def iter_fields(node):
     """
     Yield a tuple of ``(fieldname, value)`` for each field in ``node._fields``
@@ -38,6 +41,7 @@ def iter_fields(node):
             yield field, getattr(node, field)
         except AttributeError:
             pass
+
 
 def node_to_string(node):
     out = type(node).__name__
@@ -53,6 +57,7 @@ def node_to_string(node):
         out += '(' + start + ' - ' + end + ')'
 
     return out
+
 
 def visit_node(node, location):
     target = location[0]
@@ -81,6 +86,7 @@ def visit_node(node, location):
                     visit_node(item, location)
         elif isinstance(value, ast.AST):
             visit_node(value, location)
+
 
 with open(__file__, 'rb') as src_stream:
     source = src_stream.read()

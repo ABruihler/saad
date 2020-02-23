@@ -1,9 +1,10 @@
 import json
-from pathlib import Path
-import subprocess
-import shlex
 import os
 import re
+import shlex
+import subprocess
+from pathlib import Path
+
 
 # Replace curly-brace surrounded variables with
 # the corresponding value in 'values'
@@ -12,16 +13,19 @@ import re
 def insert_named_values(string, values):
     return re.sub(r'{([a-zA-Z0-9_~]+)}', lambda m: values[m.group(1)], string)
 
+
 def merge_two_dicts(x, y):
-    z = x.copy() # Start with x's keys and values
-    z.update(y) # Modifies z with y's keys and values & returns None
+    z = x.copy()  # Start with x's keys and values
+    z.update(y)  # Modifies z with y's keys and values & returns None
     return z
+
 
 def parse_json_file(file_path):
     with open(file_path, 'r') as probe_config_file:
         probe_file_contents = probe_config_file.read()
 
     return json.loads(probe_file_contents)
+
 
 # Easy way to recursively iterate over all json files in a directory
 # Usage: for parsed_json in all_json_in_dir(path):
@@ -32,6 +36,7 @@ def all_json_in_dir(dir_path):
     for path in pathlist:
         parsed = parse_json_file(str(path))
         yield parsed
+
 
 def load_modules():
     modules = {}
@@ -47,7 +52,9 @@ def load_modules():
 
     return modules
 
+
 modules = load_modules()
+
 
 def run_module(module_type, config, bound_values):
     module = modules[module_type]
@@ -71,6 +78,7 @@ def run_module(module_type, config, bound_values):
         print(output)
         return output
 
+
 def handle_config(config, default_variables):
     bound_values = default_variables.copy()
 
@@ -79,6 +87,7 @@ def handle_config(config, default_variables):
         output = run_module(module['type'], module_config, bound_values)
         if 'name' in module:
             bound_values[module['name']] = output
+
 
 def iterate_over_configs(current_commit_dir, previous_commit_dir):
     path = os.path.join(current_commit_dir, 'example_probe_configs')
@@ -91,6 +100,7 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
 
     for config in all_json_in_dir(path):
         handle_config(config, default_variables)
+
 
 if __name__ == "__main__":
     iterate_over_configs(os.path.dirname(os.path.abspath(__file__)), os.path.dirname(os.path.abspath(__file__)))

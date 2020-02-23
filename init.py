@@ -8,20 +8,22 @@ import sys
 import threading
 import json
 import tempfile
+
 import core
 
 DEFAULT_PORT = 8080
 
 parser = argparse.ArgumentParser(description='Run saad')
 parser.add_argument('--port',
-        help='HTTP server port (default is ' + str(DEFAULT_PORT) + ')',
-        type=int, default=DEFAULT_PORT)
+                    help='HTTP server port (default is ' + str(DEFAULT_PORT) + ')',
+                    type=int, default=DEFAULT_PORT)
 
 args = parser.parse_args()
 
 httpd = None
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 
 def update_self(server, script_location, script_args):
     print('RESTARTING')
@@ -44,10 +46,11 @@ def update_self(server, script_location, script_args):
     print('starting new code...')
     os.execv(script_location, script_args)
 
+
 def run_on_git(clone_url, current_commit, previous_commit):
     with tempfile.TemporaryDirectory() as previous_dirname:
         with tempfile.TemporaryDirectory() as current_dirname:
-            startdir=os.path.dirname(os.path.abspath(__file__))
+            startdir = os.path.dirname(os.path.abspath(__file__))
             os.chdir(previous_dirname)
             os.system('git clone ' + clone_url + ' .')
             os.system('git checkout ' + previous_commit)
@@ -59,6 +62,7 @@ def run_on_git(clone_url, current_commit, previous_commit):
             os.chdir(startdir)
             # Run probes!
             core.iterate_over_configs(current_dirname, previous_dirname)
+
 
 class Handler(http.server.BaseHTTPRequestHandler):
     timeout = 5
@@ -123,9 +127,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
             run_on_git(clone_url, current_commit, previous_commit)
             print(clone_url, ref, current_commit, previous_commit)
 
+
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     timeout = 5
     allow_reuse_address = True
+
 
 httpd = ThreadedTCPServer(('', args.port), Handler)
 

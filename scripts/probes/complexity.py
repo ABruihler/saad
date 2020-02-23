@@ -1,6 +1,6 @@
 import json
-import sys
 import subprocess
+import sys
 
 target_file = sys.argv[1]
 target = sys.argv[2]
