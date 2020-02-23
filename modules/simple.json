@@ -3,7 +3,7 @@
         "command": "cat {path}"
     },
     "reverse": {
-    	"command": "echo {string} | rev"
+        "command": "echo {string} | rev"
     },
     "checkComplexity": {
         "command": "python scripts/probes/complexity.py {path} {target} {threshold}"
