@@ -8,7 +8,7 @@ import sys
 import threading
 import json
 import tempfile
-import module_runner
+import core
 
 DEFAULT_PORT = 8080
 
@@ -58,7 +58,7 @@ def run_on_git(clone_url, current_commit, previous_commit):
 
             os.chdir(startdir)
             # Run probes!
-            module_runner.iterate_over_configs(current_dirname, previous_dirname)
+            core.iterate_over_configs(current_dirname, previous_dirname)
 
 class Handler(http.server.BaseHTTPRequestHandler):
     timeout = 5
