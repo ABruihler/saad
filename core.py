@@ -41,7 +41,7 @@ def all_json_in_dir(dir_path):
 def load_modules():
     modules = {}
 
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'module_config')
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'module_configs')
     for config in all_json_in_dir(path):
         for key, value in config.items():
             if key in modules:
@@ -90,7 +90,7 @@ def handle_config(config, default_variables):
 
 
 def iterate_over_configs(current_commit_dir, previous_commit_dir):
-    path = os.path.join(current_commit_dir, 'example_probe_configs')
+    path = os.path.join(current_commit_dir, 'probe_configs')
 
     # Default variables that can be accessed in module/monitoring configs
     default_variables = {
