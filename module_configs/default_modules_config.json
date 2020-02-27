@@ -12,6 +12,6 @@
     "command": "python3 scripts/probes/filechange.py {HEAD}/{file} {HEAD~1}/{file}"
   },
   "slackBot": {
-    "command": "if [ \"{condition}\" = \"True\" ]; then python3.8 actuators/slack_actuator.py $(cat actuators/slackbot_token.txt) {channel} {message}; fi"
+    "command": "if [ \"{condition}\" = \"True\" ]; then python3.8 scripts/actuators/slack_actuator.py $(cat scripts/actuators/slackbot_token.txt) {channel} {message}; fi"
   }
 }
