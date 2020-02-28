@@ -11,7 +11,7 @@ from pathlib import Path
 # Example: insert_named_valued('Hello {name}', {'name': 'Bob'})
 # -> 'Hello Bob'
 def insert_named_values(string, values):
-    return re.sub(r'{([a-zA-Z0-9_~]+)}', lambda m: values[m.group(1)], string)
+    return re.sub(r'{([a-zA-Z0-9_~]+)}', lambda m: str(values[m.group(1)]), string)
 
 
 def merge_two_dicts(x, y):
@@ -84,9 +84,20 @@ def handle_config(config, default_variables):
 
     for module in config:
         module_config = merge_two_dicts(default_variables, module['config'])
-        output = run_module(module['type'], module_config, bound_values)
-        if 'name' in module:
-            bound_values[module['name']] = output
+        if(evaluate_condition(module_config, bound_values)):
+            output = run_module(module['type'], module_config, bound_values)
+            if 'name' in module:
+                bound_values[module['name']] = output
+
+
+def evaluate_condition(module_config, bound_values):
+    try:
+        condition = module_config['condition']
+    except KeyError:
+        return True
+
+    populated_condition = insert_named_values(condition, bound_values)
+    return eval(populated_condition)
 
 
 def iterate_over_configs(current_commit_dir, previous_commit_dir):
