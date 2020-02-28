@@ -1,6 +1,7 @@
 import ast
 import re
 from collections import namedtuple
+import sys
 
 import asttokens
 
@@ -66,31 +67,47 @@ def visit_node(node, location):
         if isinstance(node, ast.ClassDef) and node.name == target.name:
             location = location[1:]
         elif target.direct_child:
-            return
+            return None
     elif target.type == 'func':
         if isinstance(node, ast.FunctionDef) and node.name == target.name:
             location = location[1:]
         elif target.direct_child:
-            return
+            return None
 
     if len(location) == 0:
-        print(node)
-        print(':'.join(map(str, node.first_token.start)))
-        print(':'.join(map(str, node.last_token.end)))
-        return
+        return node
+    #     print(node)
+    #     print(':'.join(map(str, node.first_token.start)))
+    #     print(':'.join(map(str, node.last_token.end)))
+    #     return
 
     for field, value in iter_fields(node):
         if isinstance(value, list):
             for item in value:
                 if isinstance(item, ast.AST):
-                    visit_node(item, location)
+                    node = visit_node(item, location)
+                    if node:
+                        return node
         elif isinstance(value, ast.AST):
-            visit_node(value, location)
+            node = visit_node(value, location)
+            if node:
+                return node
 
+    return None
 
-with open(__file__, 'rb') as src_stream:
-    source = src_stream.read()
-    atok = asttokens.ASTTokens(source, parse=True)
-    location = parse_ast_location('func(visit_node)')
-    # location = parse_ast_location('func(node_to_string)')
-    visit_node(atok.tree, location)
+if __name__ == '__main__' and len(sys.argv) > 2:
+    file_path = sys.argv[1]
+    ast_path = sys.argv[2]
+
+    with open(file_path, 'rb') as src_stream:
+        source = src_stream.read()
+        atok = asttokens.ASTTokens(source, parse=True)
+        location = parse_ast_location(ast_path)
+        node = visit_node(atok.tree, location)
+
+        if node:
+            print(file_path)
+            print(':'.join(map(str, node.first_token.start)))
+            print(':'.join(map(str, node.last_token.end)))
+        else:
+            print(None)
