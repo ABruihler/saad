@@ -57,6 +57,7 @@ def run_on_git(clone_url, current_commit, previous_commit):
             print('Cloning previous commit...\n')
             os.chdir(previous_dirname)
             os.system('git clone ' + clone_url + ' .')
+            os.system('git config --local advice.detachedHead false')
             os.system('git checkout ' + previous_commit)
             print()
 
@@ -64,6 +65,7 @@ def run_on_git(clone_url, current_commit, previous_commit):
             print('Cloning current commit...\n')
             os.chdir(current_dirname)
             os.system('git clone ' + clone_url + ' .')
+            os.system('git config --local advice.detachedHead false')
             os.system('git checkout ' + current_commit)
 
             os.chdir(root_path)
