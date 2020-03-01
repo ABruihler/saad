@@ -1,6 +1,6 @@
 [
   {
-    "type": "slackBot",
+    "type": "slackBotSimple",
     "config": {
       "condition": "True",
       "channel": "monitoring-slack-test-public",
