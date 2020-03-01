@@ -95,6 +95,7 @@ def visit_node(node, location):
 
     return None
 
+
 if __name__ == '__main__' and len(sys.argv) > 2:
     file_path = sys.argv[1]
     ast_path = sys.argv[2]

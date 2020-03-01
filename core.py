@@ -84,7 +84,7 @@ def handle_config(config, default_variables):
 
     for module in config:
         module_config = merge_two_dicts(default_variables, module['config'])
-        if(evaluate_condition(module_config, bound_values)):
+        if evaluate_condition(module_config, bound_values):
             output = run_module(module['type'], module_config, bound_values)
             if 'name' in module:
                 bound_values[module['name']] = output
