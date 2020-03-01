@@ -36,9 +36,10 @@ def main():
 
 
 if __name__ == "__main__":
-    if sys.argv.__len__() != 5:
-        # TODO clarify use for blocks
-        print("Usage: slack_actuator.py [API_TOKEN] [channel name (no #)] [message] [blocks]")
+    if sys.argv.__len__() != 4 and sys.argv.__len__() != 5:
+        print("Usage:")
+        print("\tslack_actuator.py [API_TOKEN] [channel name (no #)] [message]")
+        print("\tslack_actuator.py [API_TOKEN] [channel name (no #)] [backup_message] [blocks]")  # TODO clarify use for blocks
         print("(args length: " + str(sys.argv.__len__()) + ")")
     else:
         main()
