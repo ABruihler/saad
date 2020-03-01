@@ -97,7 +97,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write('updating...\n'.encode())
 
-            threading.Thread(target=update_self, args=(httpd, root_path, sys.argv,)).start()
+            
         elif request_path == '/run':
             # Git webhook for running SAAD on a repo
             if self.headers.get('content-type') != 'application/json':
@@ -136,8 +136,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write('running...\n'.encode())
 
-            run_on_git(clone_url, current_commit, previous_commit)
-            print(clone_url, ref, current_commit, previous_commit)
+            if request_path == '/update':
+                new_args = ['--clone_url', clone_url,
+                            '--current_commit', current_commit
+                            '--previous_commit', previous_commit]
+
+                threading.Thread(target=update_self, args=(httpd, root_path, new_args,)).start()
+            elif request_path == '/run':
+                run_on_git(clone_url, current_commit, previous_commit)
 
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
