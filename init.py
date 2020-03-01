@@ -53,10 +53,12 @@ def run_on_git(clone_url, current_commit, previous_commit):
             startdir = os.path.dirname(os.path.abspath(__file__))
             os.chdir(previous_dirname)
             os.system('git clone ' + clone_url + ' .')
+            os.system('git config --local advice.detachedHead false')
             os.system('git checkout ' + previous_commit)
 
             os.chdir(current_dirname)
             os.system('git clone ' + clone_url + ' .')
+            os.system('git config --local advice.detachedHead false')
             os.system('git checkout ' + current_commit)
 
             os.chdir(startdir)
