@@ -1,0 +1,22 @@
+import os
+import tempfile
+from distutils.dir_util import copy_tree
+
+import core
+
+root_path = os.path.dirname(os.path.abspath(__file__))
+
+with tempfile.TemporaryDirectory() as previous_dirname:
+    with tempfile.TemporaryDirectory() as current_dirname:
+        print('Copying current directory (as current commit)...')
+        copy_tree(root_path, current_dirname)
+
+        print('Copy current directory and resetting to HEAD (as previous commit)...')
+        copy_tree(root_path, previous_dirname)
+        os.chdir(previous_dirname)
+        os.system('git reset --hard HEAD')
+
+        os.chdir(root_path)
+
+        print('Running probes...')
+        core.iterate_over_configs(current_dirname, previous_dirname)

@@ -76,10 +76,6 @@ def visit_node(node, location):
 
     if len(location) == 0:
         return node
-    #     print(node)
-    #     print(':'.join(map(str, node.first_token.start)))
-    #     print(':'.join(map(str, node.last_token.end)))
-    #     return
 
     for field, value in iter_fields(node):
         if isinstance(value, list):

@@ -3,7 +3,7 @@
     "name": "diff",
     "type": "fileChange",
     "config": {
-      "file": "module_runner.py"
+      "file": "core.py"
     }
   },
   {
