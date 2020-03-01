@@ -18,23 +18,26 @@ parser.add_argument('--port',
                     help='HTTP server port (default is ' + str(DEFAULT_PORT) + ')',
                     type=int, default=DEFAULT_PORT)
 
+parser.add_argument('--previous_commit', type=str)
+parser.add_argument('--current_commit', type=str)
+parser.add_argument('--clone_url', type=str)
+
 args = parser.parse_args()
 
 httpd = None
 
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
+root_path = os.path.dirname(os.path.abspath(__file__))
+os.chdir(root_path)
 
-
-def update_self(server, script_location, script_args):
+def update_self(server, root_path, script_args):
     print('RESTARTING')
 
     print('shutting down http server...')
     server.shutdown()
     server.server_close()
 
-    print('current directory:', os.getcwd())
     print('making sure we are in current directory...')
-    os.chdir(os.path.dirname(os.path.abspath(script_location)))
+    os.chdir(root_path)
     print('current directory:', os.getcwd())
 
     print('pulling new code from git...')
@@ -50,18 +53,27 @@ def update_self(server, script_location, script_args):
 def run_on_git(clone_url, current_commit, previous_commit):
     with tempfile.TemporaryDirectory() as previous_dirname:
         with tempfile.TemporaryDirectory() as current_dirname:
-            startdir = os.path.dirname(os.path.abspath(__file__))
+            print('################')
+            print('Cloning previous commit...\n')
             os.chdir(previous_dirname)
             os.system('git clone ' + clone_url + ' .')
             os.system('git checkout ' + previous_commit)
+            print()
 
+            print('################')
+            print('Cloning current commit...\n')
             os.chdir(current_dirname)
             os.system('git clone ' + clone_url + ' .')
             os.system('git checkout ' + current_commit)
 
-            os.chdir(startdir)
-            # Run probes!
+            os.chdir(root_path)
+
+            print('################')
+            print('Running probes...\n')
             core.iterate_over_configs(current_dirname, previous_dirname)
+
+            print('################')
+            print('Complete!\n')
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -85,7 +97,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write('updating...\n'.encode())
 
-            threading.Thread(target=update_self, args=(httpd, __file__, sys.argv,)).start()
+            threading.Thread(target=update_self, args=(httpd, root_path, sys.argv,)).start()
         elif request_path == '/run':
             # Git webhook for running SAAD on a repo
             if self.headers.get('content-type') != 'application/json':
@@ -135,5 +147,11 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
 httpd = ThreadedTCPServer(('', args.port), Handler)
 
+if args.previous_commit and args.current_commit and args.clone_url:
+    print('Running on self', args.clone_url, args.current_commit, args.previous_commit)
+    func_args = (args.clone_url, args.current_commit, args.previous_commit,)
+    threading.Thread(target=run_on_git, args=func_args).start()
+
+print(sys.argv)
 print('server at port', args.port)
 httpd.serve_forever()
