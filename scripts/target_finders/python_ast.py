@@ -1,7 +1,7 @@
 import ast
 import re
-from collections import namedtuple
 import sys
+from collections import namedtuple
 
 import asttokens
 
