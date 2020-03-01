@@ -1,3 +1,4 @@
+import json
 import sys
 from typing import Final
 
@@ -27,15 +28,17 @@ def actuate_blocks(api_token, channel, message, blocks):
 
 if __name__ == "__main__":
     if sys.argv.__len__() == 4:
+        # Normal case with a simple message
         SLACK_API_TOKEN: Final = sys.argv[1]
         CHANNEL = sys.argv[2]
         MESSAGE = sys.argv[3]
         actuate(SLACK_API_TOKEN, CHANNEL, MESSAGE)
-    elif sys.argv.__len__() == 4:
+    elif sys.argv.__len__() == 5:
+        # Supported for more advanced message formats using blocks
         SLACK_API_TOKEN: Final = sys.argv[1]
         CHANNEL = sys.argv[2]
         MESSAGE = sys.argv[3]
-        BLOCKS = sys.argv[4]
+        BLOCKS = json.loads(sys.argv[4])  # TODO better handling this as input from the probe JSON
         actuate_blocks(SLACK_API_TOKEN, CHANNEL, MESSAGE, BLOCKS)
     else:
         print("Usage:")
