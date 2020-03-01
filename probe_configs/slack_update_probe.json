@@ -4,7 +4,7 @@
     "config": {
       "condition": "True",
       "channel": "monitoring-slack-test-public",
-      "message": "saad_example repo was run by saad"
+      "message": "saad repo was run by saad"
     }
   }
 ]
