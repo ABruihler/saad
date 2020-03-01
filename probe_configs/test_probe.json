@@ -3,7 +3,7 @@
     "name": "diff",
     "type": "fileChange",
     "config": {
-      "file": "module_runner.py"
+      "file": "temp.txt"
     }
   },
   {
@@ -11,7 +11,27 @@
     "config": {
       "condition": "{diff}",
       "channel": "monitoring-slack-test-public",
-      "message": "file module_runner.py changed"
+      "message": "file temp.txt changed",
+      "blocks": [
+        {
+          "type": "section",
+          "text": {
+            "type": "plain_text",
+            "text": "This is a plain text section block.",
+            "emoji": true
+          }
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": "This is a mrkdwn section block :ghost: *this is bold*, and ~this is crossed out~, and <https://google.com|this is a link>"
+          }
+        }
+      ]
     }
   }
 ]
