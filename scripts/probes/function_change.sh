@@ -21,6 +21,6 @@ new_target_end=$(echo $new_target | cut -d ' ' -f 2 | cut -d ':' -f 1)
 sed -n -e "$old_target_start,$old_target_end p" -e "$old_target_end q" $1 > old_function.txt
 sed -n -e "$new_target_start,$new_target_end p" -e "$new_target_end q" $2 > new_function.txt
 
-cmp --silent old_function.txt new_function.txt && echo 'False' ||  echo 'True'
+cmp --silent old_function.txt new_function.txt && echo 'False' || echo 'True'
 
 rm old_function.txt && rm new_function.txt
