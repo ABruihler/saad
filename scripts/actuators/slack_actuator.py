@@ -26,22 +26,49 @@ def actuate_blocks(api_token, channel, message, blocks):
     assert response["message"]["text"] == message
 
 
-if __name__ == "__main__":
-    if sys.argv.__len__() == 4:
-        # Normal case with a simple message
-        SLACK_API_TOKEN: Final = sys.argv[1]
-        CHANNEL = sys.argv[2]
-        MESSAGE = sys.argv[3]
-        actuate(SLACK_API_TOKEN, CHANNEL, MESSAGE)
-    elif sys.argv.__len__() == 5:
-        # Supported for more advanced message formats using blocks
-        SLACK_API_TOKEN: Final = sys.argv[1]
-        CHANNEL = sys.argv[2]
-        MESSAGE = sys.argv[3]
-        BLOCKS = json.loads(sys.argv[4])  # TODO better handling this as input from the probe JSON
-        actuate_blocks(SLACK_API_TOKEN, CHANNEL, MESSAGE, BLOCKS)
+def print_usage():
+    print("Arguments:")
+    print("\tslack_actuator.py --simple [API_TOKEN] [channel name (no #)] [message]")
+    print("\tslack_actuator.py --blocks [API_TOKEN] [channel name (no #)] [backup_message] [blocks]")
+    print("\t\t[blocks] is a string of a JSON formatting for a blocks of a message")
+    print("\t\t[backup_message] is a message that may be shown instead in certain situations")
+    print("(args length: " + str(sys.argv.__len__()) + ")")  # Note args length includes slack_actuator, at sys.argv[0]
+
+
+def main():
+    if sys.argv.__len__() < 2:
+        print_usage()
+        return
+    mode = sys.argv[1]
+    if mode == "--simple":
+        if sys.argv.__len__() == 5:
+            # Normal case with a simple message
+            SLACK_API_TOKEN: Final = sys.argv[2]
+            CHANNEL = sys.argv[3]
+            MESSAGE = sys.argv[4]
+            return actuate(SLACK_API_TOKEN, CHANNEL, MESSAGE)
+        else:
+            print_usage()
+            return
+    elif mode == "--blocks":
+        if sys.argv.__len__() == 6:
+            # Supported for more advanced message formats using blocks
+            SLACK_API_TOKEN: Final = sys.argv[2]
+            CHANNEL = sys.argv[3]
+            MESSAGE = sys.argv[4]
+            BLOCKS = json.loads(sys.argv[5])  # TODO better handling this as input from the probe JSON?
+            return actuate_blocks(SLACK_API_TOKEN, CHANNEL, MESSAGE, BLOCKS)
+        else:
+            print_usage()
+            return
+    elif mode == "--help" or mode == "-h":
+        print_usage()
+        return
     else:
-        print("Usage:")
-        print("\tslack_actuator.py [API_TOKEN] [channel name (no #)] [message]")
-        print("\tslack_actuator.py [API_TOKEN] [channel name (no #)] [backup_message] [blocks]")  # TODO clarify use for blocks
-        print("(args length: " + str(sys.argv.__len__()) + ")")
+        print("Unrecognized mode: " + mode)
+        print_usage()
+        return
+
+
+if __name__ == "__main__":
+    main()
