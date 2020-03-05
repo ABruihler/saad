@@ -8,6 +8,7 @@ import sys
 import threading
 import json
 import tempfile
+import subprocess
 
 import core
 
@@ -78,6 +79,14 @@ def run_on_git(clone_url, current_commit, previous_commit):
             print('Complete!\n')
 
 
+def get_logs():
+    command = 'journalctl -n 500 --no-pager -u saad_python_service.service'
+    script = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    output, error = script.communicate()
+
+    return output.decode('utf-8')
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     timeout = 5
 
@@ -85,9 +94,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
-        self.wfile.write('saad server :\'(\n\n'.encode())
 
-        self.wfile.write(('path: ' + self.path).encode())
+        if request_path == '/logs':
+            self.wfile.write(get_logs())
+        else:
+            self.wfile.write('saad server :\'(\n\n'.encode())
+            self.wfile.write(('path: ' + self.path).encode())
 
     def do_POST(self):
         request_path = self.path
