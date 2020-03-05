@@ -81,7 +81,7 @@ def run_on_git(clone_url, current_commit, previous_commit):
 
 
 def get_logs():
-    command = 'journalctl -n 500 --no-pager -u saad_python_service.service'
+    command = 'echo "test"'
     script = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     output, error = script.communicate()
 
