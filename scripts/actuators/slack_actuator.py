@@ -13,7 +13,6 @@ def actuate_simple(token: str, channel: str, text: str):
         text=text)
 
     assert response["ok"]
-    assert response["message"]["text"] == text
 
 
 def actuate_blocks(token: str, channel: str, text: str, blocks: List[Optional[Dict]]):
@@ -25,7 +24,6 @@ def actuate_blocks(token: str, channel: str, text: str, blocks: List[Optional[Di
         blocks=blocks)
 
     assert response["ok"]
-    assert response["message"]["text"] == text
 
 
 def print_usage():
