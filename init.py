@@ -9,6 +9,7 @@ import sys
 import tempfile
 import subprocess
 import threading
+import hashlib
 
 import core
 
@@ -96,11 +97,19 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == '/logs':
-            self.send_response(401)
-            self.send_header('WWW-Authenticate', 'Basic realm="User Visible Realm"')
-            self.end_headers()
+            auth_header = self.headers.get('Authorization')
+            if auth_header:
+                hashed = hashlib.sha256(auth_header.encode('utf-8')).hexdigest()
+                if hashed == '33d76cd28b1a956224cd74a874a6ee84f473d28c64d7e4cd7356642c68d20fb3':
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write(get_logs().encode())
+                    return
 
-            self.wfile.write(get_logs().encode())
+            self.send_response(401)
+            self.send_header('WWW-Authenticate', 'Basic')
+            self.end_headers()
         else:
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
