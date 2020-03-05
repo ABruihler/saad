@@ -27,7 +27,7 @@ def swap_named_value(match, values):
     """
     if match.group(1) in values:
         return values.get(match.group(1))
-    else:g
+    else:
         logging.debug("Leaving variable as-is because it has no matching value: %s", match.group(0))
         return match.group(0)
 
