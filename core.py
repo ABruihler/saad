@@ -10,8 +10,9 @@ from pathlib import Path
 # the corresponding value in 'values'
 # Example: insert_named_valued('Hello {name}', {'name': 'Bob'})
 # -> 'Hello Bob'
+# Variables with no corresponding value are left as is (i.e. "{variable}")
 def insert_named_values(string, values):
-    return re.sub(r'{([a-zA-Z0-9_~]+)}', lambda m: str(values[m.group(1)]), string)
+    return re.sub(r'{([a-zA-Z0-9_~]+)}', lambda m: str(values.get(m.group(1), m.group(0))), string)
 
 
 def merge_two_dicts(x, y):
