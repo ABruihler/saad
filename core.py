@@ -5,6 +5,7 @@ import re
 import shlex
 import subprocess
 import threading
+from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
 
 
@@ -117,6 +118,7 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
 
 
 def iterate_over_configs_parallel(current_commit_dir, previous_commit_dir):
+    logging.info("Running parallel version of iterate_over_configs")
     path = os.path.join(current_commit_dir, 'probe_configs')
 
     # Default variables that can be accessed in module/monitoring configs
@@ -126,17 +128,13 @@ def iterate_over_configs_parallel(current_commit_dir, previous_commit_dir):
         'HEAD~1': previous_commit_dir
     }
 
-    threads = list()
-    for config in all_json_in_dir(path):
-        logging.debug("Starting thread %d", threads.__len__())
-        x = threading.Thread(target=handle_config, args=(config, default_variables,))
-        threads.append(x)
-        x.start()
+    with ThreadPoolExecutor() as executor:
+        for config in all_json_in_dir(path):
+            logging.debug("Submitting a config to the thread pool")
+            executor.submit(handle_config, config, default_variables)
+        logging.info("All configs submitted to thread pool")
 
-    for index, thread in enumerate(threads):
-        logging.debug("Asking/waiting for thread %d to finish", index)
-        thread.join()
-        logging.debug("Thread %d done", index)
+    logging.info("All config threads finished")
 
 
 if __name__ == "__main__":
