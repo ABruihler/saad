@@ -96,8 +96,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/plain')
         self.end_headers()
 
-        if request_path == '/logs':
-            self.wfile.write(get_logs())
+        if self.path == '/logs':
+            self.wfile.write(get_logs().encode())
         else:
             self.wfile.write('saad server :\'(\n\n'.encode())
             self.wfile.write(('path: ' + self.path).encode())
