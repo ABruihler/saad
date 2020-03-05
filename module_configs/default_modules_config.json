@@ -17,6 +17,9 @@
   "lastCommitEmail": {
     "command": "cd {HEAD} && git log -1 --pretty=format:'%ae'"
   },
+  "lastCommitMessage": {
+    "command": "cd {HEAD} && git log -1 --pretty=format:'%B'"
+  },
   "slackBotSimple": {
     "command": "if [ \"{condition}\" = \"True\" ]; then python3.8 scripts/actuators/slack_actuator.py --simple $(cat scripts/actuators/slackbot_token.txt) {channel} {message}; fi"
   },

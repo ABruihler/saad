@@ -6,11 +6,17 @@
     }
   },
   {
+    "name": "message",
+    "type": "lastCommitMessage",
+    "config": {
+    }
+  },
+  {
     "type": "slackBotSimple",
     "config": {
       "condition": "True",
       "channel": "monitoring-slack-test-public",
-      "message": "saad repo was updated by {user}"
+      "message": "saad repo was updated by {user}\n>{message}"
     }
   }
 ]
