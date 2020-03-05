@@ -1,8 +1,10 @@
 import json
+import logging
 import os
 import re
 import shlex
 import subprocess
+import threading
 from pathlib import Path
 
 
@@ -112,6 +114,29 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
 
     for config in all_json_in_dir(path):
         handle_config(config, default_variables)
+
+
+def iterate_over_configs_parallel(current_commit_dir, previous_commit_dir):
+    path = os.path.join(current_commit_dir, 'probe_configs')
+
+    # Default variables that can be accessed in module/monitoring configs
+    # TODO address multiple probes working in same directory at same time?
+    default_variables = {
+        'HEAD': current_commit_dir,
+        'HEAD~1': previous_commit_dir
+    }
+
+    threads = list()
+    for config in all_json_in_dir(path):
+        logging.debug("Starting thread %d", threads.__len__())
+        x = threading.Thread(target=handle_config, args=(config, default_variables,))
+        threads.append(x)
+        x.start()
+
+    for index, thread in enumerate(threads):
+        logging.debug("Asking/waiting for thread %d to finish", index)
+        thread.join()
+        logging.debug("Thread %d done", index)
 
 
 if __name__ == "__main__":
