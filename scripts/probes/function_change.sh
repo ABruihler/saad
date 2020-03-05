@@ -9,8 +9,8 @@ extension="${1##*.}"
 
 if [ "$extension" == "py" ]; then
     targeter="scripts/target_finders/python_ast.py"
-    old_target=$(python $targeter $1 $3 | grep ':')
-    new_target=$(python $targeter $2 $3 | grep ':')
+    old_target=$(python3 $targeter $1 $3 | grep ':')
+    new_target=$(python3 $targeter $2 $3 | grep ':')
 fi
 
 old_target_start=$(echo $old_target | cut -d ':' -f 1)
