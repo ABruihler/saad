@@ -1,44 +1,74 @@
+import json
 import sys
-from typing import Final
+from typing import Dict, Final, List, Optional
 
 import slack
 
 
-def actuate(api_token, channel, message):
-    client = slack.WebClient(token=api_token)
+def actuate_simple(token: str, channel: str, text: str):
+    client = slack.WebClient(token=token)
 
     response = client.chat_postMessage(
         channel=channel,
-        text=message)
+        text=text)
+
     assert response["ok"]
-    assert response["message"]["text"] == message
 
 
-def actuate_blocks(api_token, channel, message, blocks):
-    client = slack.WebClient(token=api_token)
+def actuate_blocks(token: str, channel: str, text: str, blocks: List[Optional[Dict]]):
+    client = slack.WebClient(token=token)
 
     response = client.chat_postMessage(
         channel=channel,
-        text=message,
+        text=text,
         blocks=blocks)
+
     assert response["ok"]
-    assert response["message"]["text"] == message
+
+
+def print_usage():
+    print("Arguments:")
+    print("\tslack_actuator.py --simple [API_TOKEN] [channel name (no #)] [text]")
+    print("\tslack_actuator.py --blocks [API_TOKEN] [channel name (no #)] [text] [blocks]")
+    print("\t\t[blocks] is a string of a JSON formatting for a blocks of a message")
+    print("\t\t[text] is a fallback string that may be shown instead of the blocks in certain situations")
+    print("(args length: " + str(sys.argv.__len__()) + ")")  # Note args length includes slack_actuator, at sys.argv[0]
+
+
+def main():
+    if sys.argv.__len__() < 2:
+        print_usage()
+        return
+    mode = sys.argv[1]
+    if mode == "--simple":
+        if sys.argv.__len__() == 5:
+            # Normal case with a simple message
+            token: Final = sys.argv[2]
+            channel = sys.argv[3]
+            text = sys.argv[4]
+            return actuate_simple(token, channel, text)
+        else:
+            print_usage()
+            return
+    elif mode == "--blocks":
+        if sys.argv.__len__() == 6:
+            # Supported for more advanced message formats using blocks
+            token: Final = sys.argv[2]
+            channel = sys.argv[3]
+            text = sys.argv[4]
+            blocks: List[Optional[Dict]] = json.loads(sys.argv[5], strict=False)  # TODO handle better as input from the probe JSON?
+            return actuate_blocks(token, channel, text, blocks)
+        else:
+            print_usage()
+            return
+    elif mode == "--help" or mode == "-h":
+        print_usage()
+        return
+    else:
+        print("Unrecognized mode: " + mode)
+        print_usage()
+        return
 
 
 if __name__ == "__main__":
-    if sys.argv.__len__() == 4:
-        SLACK_API_TOKEN: Final = sys.argv[1]
-        CHANNEL = sys.argv[2]
-        MESSAGE = sys.argv[3]
-        actuate(SLACK_API_TOKEN, CHANNEL, MESSAGE)
-    elif sys.argv.__len__() == 4:
-        SLACK_API_TOKEN: Final = sys.argv[1]
-        CHANNEL = sys.argv[2]
-        MESSAGE = sys.argv[3]
-        BLOCKS = sys.argv[4]
-        actuate_blocks(SLACK_API_TOKEN, CHANNEL, MESSAGE, BLOCKS)
-    else:
-        print("Usage:")
-        print("\tslack_actuator.py [API_TOKEN] [channel name (no #)] [message]")
-        print("\tslack_actuator.py [API_TOKEN] [channel name (no #)] [backup_message] [blocks]")  # TODO clarify use for blocks
-        print("(args length: " + str(sys.argv.__len__()) + ")")
+    main()

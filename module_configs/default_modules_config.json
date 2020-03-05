@@ -6,18 +6,30 @@
     "command": "echo {string} | rev"
   },
   "checkComplexity": {
-    "command": "python scripts/probes/complexity.py {path} {target} {threshold}"
+    "command": "python3 scripts/probes/complexity.py {path} {target} {threshold}"
   },
   "fileChange": {
     "command": "python3 scripts/probes/filechange.py {HEAD}/{file} {HEAD~1}/{file}"
   },
-  "slackBot": {
-    "command": "if [ \"{condition}\" = \"True\" ]; then python3.8 scripts/actuators/slack_actuator.py $(cat scripts/actuators/slackbot_token.txt) {channel} {message}; fi"
+  "lastCommitUser": {
+    "command": "cd {HEAD} && git log -1 --pretty=format:'%an'"
+  },
+  "lastCommitEmail": {
+    "command": "cd {HEAD} && git log -1 --pretty=format:'%ae'"
+  },
+  "lastCommitMessage": {
+    "command": "cd {HEAD} && git log -1 --pretty=format:'%B'"
+  },
+  "slackBotSimple": {
+    "command": "if [ \"{condition}\" = \"True\" ]; then python3.8 scripts/actuators/slack_actuator.py --simple $(cat scripts/actuators/slackbot_token.txt) {channel} {message}; fi"
   },
   "slackBotBlocks": {
-    "command": "if [ \"{condition}\" = \"True\" ]; then python3.8 scripts/actuators/slack_actuator.py $(cat scripts/actuators/slackbot_token.txt) {channel} {message} {blocks}; fi"
+    "command": "if [ \"{condition}\" = \"True\" ]; then python3.8 scripts/actuators/slack_actuator.py --blocks $(cat scripts/actuators/slackbot_token.txt) {channel} {message} {blocks}; fi"
   },
   "pythonAST": {
     "command": "python3 scripts/target_finders/python_ast.py {file} {astLocation}"
+  },
+  "functionChange": {
+    "command": "./scripts/probes/function_change.sh {HEAD}/{file} {HEAD~1}/{file} {function}"
   }
 }

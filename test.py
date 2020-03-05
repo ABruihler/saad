@@ -1,8 +1,12 @@
+import logging
 import os
 import tempfile
+import time
 from distutils.dir_util import copy_tree
 
 import core
+
+logging.basicConfig(level=logging.DEBUG)
 
 root_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -19,4 +23,9 @@ with tempfile.TemporaryDirectory() as previous_dirname:
         os.chdir(root_path)
 
         print('Running probes...')
+        start = time.time()
         core.iterate_over_configs(current_dirname, previous_dirname)
+        # core.iterate_over_configs_parallel(current_dirname, previous_dirname)
+
+        print('Probes finished')
+        print('Took ' + str(time.time() - start) + ' seconds to run all probes')

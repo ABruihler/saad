@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-import http.server
-import socketserver
 import argparse
-import os
-import sys
-import threading
+import http.server
 import json
+import os
+import socketserver
+import sys
 import tempfile
 import subprocess
+import threading
 
 import core
 
@@ -29,6 +29,7 @@ httpd = None
 
 root_path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(root_path)
+
 
 def update_self(server, script_args):
     print('RESTARTING')

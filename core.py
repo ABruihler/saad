@@ -1,8 +1,11 @@
 import json
+import logging
 import os
 import re
 import shlex
 import subprocess
+import threading
+from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
 
 
@@ -10,8 +13,9 @@ from pathlib import Path
 # the corresponding value in 'values'
 # Example: insert_named_valued('Hello {name}', {'name': 'Bob'})
 # -> 'Hello Bob'
+# Variables with no corresponding value are left as is (i.e. "{variable}")
 def insert_named_values(string, values):
-    return re.sub(r'{([a-zA-Z0-9_~]+)}', lambda m: str(values[m.group(1)]), string)
+    return re.sub(r'{([a-zA-Z0-9_~]+)}', lambda m: str(values.get(m.group(1), m.group(0))), string)
 
 
 def merge_two_dicts(x, y):
@@ -111,6 +115,26 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
 
     for config in all_json_in_dir(path):
         handle_config(config, default_variables)
+
+
+def iterate_over_configs_parallel(current_commit_dir, previous_commit_dir):
+    logging.info("Running parallel version of iterate_over_configs")
+    path = os.path.join(current_commit_dir, 'probe_configs')
+
+    # Default variables that can be accessed in module/monitoring configs
+    # TODO address multiple probes working in same directory at same time?
+    default_variables = {
+        'HEAD': current_commit_dir,
+        'HEAD~1': previous_commit_dir
+    }
+
+    with ThreadPoolExecutor() as executor:
+        for config in all_json_in_dir(path):
+            logging.debug("Submitting a config to the thread pool")
+            executor.submit(handle_config, config, default_variables)
+        logging.info("All configs submitted to thread pool")
+
+    logging.info("All config threads finished")
 
 
 if __name__ == "__main__":
