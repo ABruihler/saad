@@ -95,13 +95,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
     timeout = 5
 
     def do_GET(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/plain')
-        self.end_headers()
-
         if self.path == '/logs':
+            self.send_response(401)
+            self.send_header('WWW-Authenticate', 'Basic realm="User Visible Realm"')
+            self.end_headers()
+
             self.wfile.write(get_logs().encode())
         else:
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+
             self.wfile.write('saad server :\'(\n\n'.encode())
             self.wfile.write(('path: ' + self.path).encode())
 
