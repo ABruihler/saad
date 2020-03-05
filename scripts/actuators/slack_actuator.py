@@ -56,7 +56,7 @@ def main():
             token: Final = sys.argv[2]
             channel = sys.argv[3]
             text = sys.argv[4]
-            blocks: List[Optional[Dict]] = json.loads(sys.argv[5])  # TODO handle better as input from the probe JSON?
+            blocks: List[Optional[Dict]] = json.loads(sys.argv[5], strict=False)  # TODO handle better as input from the probe JSON?
             return actuate_blocks(token, channel, text, blocks)
         else:
             print_usage()
