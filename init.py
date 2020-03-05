@@ -85,9 +85,10 @@ def get_logs():
     script = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     output, error = script.communicate()
 
-    print(command, output.decode('utf-8'), error.decode('utf-8'))
+    output_text = output.decode('utf-8')
+    error_text = error.decode('utf-8')
 
-    return output.decode('utf-8')
+    return output_text
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
