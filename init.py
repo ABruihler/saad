@@ -85,6 +85,8 @@ def get_logs():
     script = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     output, error = script.communicate()
 
+    print(command, output.decode('utf-8'))
+
     return output.decode('utf-8')
 
 
