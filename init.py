@@ -81,11 +81,11 @@ def run_on_git(clone_url, current_commit, previous_commit):
 
 
 def get_logs():
-    command = 'echo "test"'
+    command = 'journalctl -n 500 --no-pager -u saad_python_service.service'
     script = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     output, error = script.communicate()
 
-    print(command, output.decode('utf-8'))
+    print(command, output.decode('utf-8'), error.decode('utf-8'))
 
     return output.decode('utf-8')
 
