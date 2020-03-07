@@ -5,6 +5,7 @@ import re
 import shlex
 import subprocess
 import threading
+import time
 from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
 
@@ -83,7 +84,19 @@ def run_module(module_type, config, bound_values):
     populated_command = insert_named_values(module['command'], quoted_config)
 
     script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    output, error = script.communicate()
+    timeout = modules.get(module_type).get("timeout", modules.get("defaultTimeout"))
+    assert timeout > 0
+    try:
+        output, error = script.communicate(timeout=timeout)
+        # Note: this doesn't seem to really work as intended, because we have shell=True in the Popen() call
+        # From what I can tell the terminate()/kill() call is called on the opened shell, not on the started commands
+        # TODO figure out a way to handle this properly and terminate the actual commands that run
+    except subprocess.TimeoutExpired:
+        terminate_t = time.time()
+        logging.warning("Script %s timed out after %ds, attempting to terminate", module_type, timeout)
+        script.terminate()
+        output, error = script.communicate()
+        logging.warning("Script %s timed out, finished terminating (took %ds)", module_type, time.time() - terminate_t)
 
     output = output.decode('utf-8')
     error = error.decode('utf-8')

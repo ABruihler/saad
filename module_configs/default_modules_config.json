@@ -1,4 +1,5 @@
 {
+  "defaultTimeout": 10,
   "readFile": {
     "command": "cat {path}"
   },
@@ -12,13 +13,16 @@
     "command": "python3 scripts/probes/filechange.py {HEAD}/{file} {HEAD~1}/{file}"
   },
   "lastCommitUser": {
-    "command": "cd {HEAD} && git log -1 --pretty=format:'%an'"
+    "command": "cd {HEAD} && git log -1 --pretty=format:'%an'",
+    "timeout": 1
   },
   "lastCommitEmail": {
-    "command": "cd {HEAD} && git log -1 --pretty=format:'%ae'"
+    "command": "cd {HEAD} && git log -1 --pretty=format:'%ae'",
+    "timeout": 1
   },
   "lastCommitMessage": {
-    "command": "cd {HEAD} && git log -1 --pretty=format:'%B'"
+    "command": "cd {HEAD} && git log -1 --pretty=format:'%B'",
+    "timeout": 1
   },
   "slackBotSimple": {
     "command": "if [ \"{condition}\" = \"True\" ]; then python3.8 scripts/actuators/slack_actuator.py --simple $(cat scripts/actuators/slackbot_token.txt) {channel} {message}; fi"
