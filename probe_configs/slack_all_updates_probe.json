@@ -16,7 +16,8 @@
     "config": {
       "condition": "True",
       "channel": "monitoring-slack-test-public",
-      "message": "saad repo was updated by {user}:\n```{message}```"
+      "message": "saad repo was updated by {user}:\n```{message}```",
+      "timeout": 4
     }
   }
 ]

@@ -16,7 +16,7 @@ from pathlib import Path
 # -> 'Hello Bob'
 # Variables with no corresponding value are left as is (i.e. "{variable}")
 def insert_named_values(string, values):
-    return re.sub(r'{([a-zA-Z0-9_~]+)}', lambda m: swap_named_value(m, values), string)
+    return re.sub(r'{([a-zA-Z0-9_~]+)}', lambda m: swap_named_value(m, values), str(string))
 
 
 def swap_named_value(match, values):
@@ -84,7 +84,7 @@ def run_module(module_type, config, bound_values):
     populated_command = insert_named_values(module['command'], quoted_config)
 
     script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    timeout = modules.get(module_type).get("timeout", modules.get("defaultTimeout"))
+    timeout = config.get("timeout", module.get("timeout", modules.get("defaultTimeout")))
     assert timeout > 0
     try:
         output, error = script.communicate(timeout=timeout)
