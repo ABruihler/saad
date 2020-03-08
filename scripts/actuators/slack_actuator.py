@@ -28,10 +28,14 @@ def actuate_blocks(token: str, channel: str, text: str, blocks: List[Optional[Di
 
 def print_usage():
     print("Arguments:")
-    print("\tslack_actuator.py --simple [API_TOKEN] [channel name (no #)] [text]")
-    print("\tslack_actuator.py --blocks [API_TOKEN] [channel name (no #)] [text] [blocks]")
+    print("\tslack_actuator.py --simple [API_TOKEN] [channel (no #)] [text]")
+    print("\t\t[channel] is the channel name (without #), or member ID (for direct messages)")
+    print("\tslack_actuator.py --blocks [API_TOKEN] [channel (no #)] [text] [blocks]")
     print("\t\t[blocks] is a string of a JSON formatting for a blocks of a message")
     print("\t\t[text] is a fallback string that may be shown instead of the blocks in certain situations")
+
+
+def print_args_count():
     print("(args length: " + str(sys.argv.__len__()) + ")")  # Note args length includes slack_actuator, at sys.argv[0]
 
 
@@ -49,6 +53,7 @@ def main():
             return actuate_simple(token, channel, text)
         else:
             print_usage()
+            print_args_count()
             return
     elif mode == "--blocks":
         if sys.argv.__len__() == 6:
@@ -60,6 +65,7 @@ def main():
             return actuate_blocks(token, channel, text, blocks)
         else:
             print_usage()
+            print_args_count()
             return
     elif mode == "--help" or mode == "-h":
         print_usage()
