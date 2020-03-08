@@ -1,29 +1,41 @@
 import json
+import logging
 import sys
 from typing import Dict, Final, List, Optional
 
 import slack
+from slack.errors import SlackClientError
 
 
-def actuate_simple(token: str, channel: str, text: str):
+def handle_slack_error(e: SlackClientError):
+    logging.warning("Slack message not posted successfully: " + str(e))
+
+
+def actuate_simple(token: str, channel: str, text: str) -> bool:
     client = slack.WebClient(token=token)
+    try:
+        response = client.chat_postMessage(
+            channel=channel,
+            text=text)
+        assert response["ok"]
+        return True
+    except SlackClientError as e:
+        handle_slack_error(e)
+        return False
 
-    response = client.chat_postMessage(
-        channel=channel,
-        text=text)
 
-    assert response["ok"]
-
-
-def actuate_blocks(token: str, channel: str, text: str, blocks: List[Optional[Dict]]):
+def actuate_blocks(token: str, channel: str, text: str, blocks: List[Optional[Dict]]) -> bool:
     client = slack.WebClient(token=token)
-
-    response = client.chat_postMessage(
-        channel=channel,
-        text=text,
-        blocks=blocks)
-
-    assert response["ok"]
+    try:
+        response = client.chat_postMessage(
+            channel=channel,
+            text=text,
+            blocks=blocks)
+        assert response["ok"]
+        return True
+    except SlackClientError as e:
+        handle_slack_error(e)
+        return False
 
 
 def print_usage():
