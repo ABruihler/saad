@@ -8,12 +8,12 @@ fi
 old_file=$1
 new_file=$2
 
-if [ "$4" == "file" ]; then
+if [ -z "$4" || "$4" == "file" ]; then
         cmp --silent old_code.txt new_code.txt && echo 'False' || echo 'True'
         exit 0
     elif [ "$4" == "function" ]; then
         target="func($3)"
-    elif [ "$4" == "function" ]; then
+    elif [ "$4" == "class" ]; then
         target="class($3)"
     else
         exit 1
@@ -27,6 +27,7 @@ if [ "$extension" == "py" ]; then
     new_target=$(python3 $targeter $new_file $target | grep ':')
 fi
 
+# Should probably change target output format so janky commands like this aren't necessary...
 old_target_start=$(echo $old_target | cut -d ':' -f 1)
 old_target_end=$(echo $old_target | cut -d ' ' -f 2 | cut -d ':' -f 1)
 new_target_start=$(echo $new_target | cut -d ':' -f 1)
