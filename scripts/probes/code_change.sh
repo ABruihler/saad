@@ -8,7 +8,7 @@ fi
 old_file=$1
 new_file=$2
 
-if [ -z "$4" ] || [g "$4" == "file" ]; then
+if [ -z "$4" ] || [ "$4" == "file" ]; then
         cmp --silent old_code.txt new_code.txt && echo 'False' || echo 'True'
         exit 0
     elif [ "$4" == "function" ]; then
