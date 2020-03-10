@@ -9,7 +9,7 @@ old_file=$1
 new_file=$2
 
 if [ -z "$4" ] || [ "$4" == "file" ]; then
-        cmp --silent old_file.txt new_file.txt && echo 'False' || echo 'True'
+        cmp --silent $old_file $new_file && echo 'False' || echo 'True'
         exit 0
     elif [ "$4" == "function" ]; then
         target="func($3)"
