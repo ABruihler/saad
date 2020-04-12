@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+from http import HTTPStatus
 
 import core
 
@@ -115,7 +116,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if self.check_auth_header():
             return True
         else:
-            self.send_response(401)
+            self.send_response(HTTPStatus.UNAUTHORIZED)
             self.send_header('WWW-Authenticate', 'Basic')
             self.end_headers()
             # TODO try to block further writes?
@@ -124,17 +125,24 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/logs':
             if self.handle_auth():
-                self.send_response(200)
+                self.send_response(HTTPStatus.OK)
                 self.send_header('Content-type', 'text/plain')
                 self.end_headers()
                 self.wfile.write(get_logs().encode())
             return
-        else:
-            self.send_response(200)
+        elif self.path == "/":
+            self.send_response(HTTPStatus.OK)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
 
-            self.wfile.write('saad server :\'(\n\n'.encode())
+            self.wfile.write('saad.sebastian.io\n'.encode())
+            self.wfile.write('See https://github.com/skimberk/saad'.encode())
+        else:
+            self.send_response(HTTPStatus.NOT_FOUND)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+
+            self.wfile.write('Page not found :\'(\n\n'.encode())
             self.wfile.write(('path: ' + self.path).encode())
 
     def do_POST(self):
