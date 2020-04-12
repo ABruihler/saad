@@ -137,6 +137,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
             self.wfile.write('saad.sebastian.io\n'.encode())
             self.wfile.write('See https://github.com/skimberk/saad'.encode())
+            return
         else:
             self.send_response(HTTPStatus.NOT_FOUND)
             self.send_header('Content-type', 'text/plain')
@@ -144,6 +145,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
             self.wfile.write('Page not found :\'(\n\n'.encode())
             self.wfile.write(('path: ' + self.path).encode())
+            return
 
     def do_POST(self):
         request_path = self.path
