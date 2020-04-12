@@ -130,6 +130,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(get_logs().encode())
             return
+        elif self.path == '/modules':
+            if self.handle_auth():
+                self.send_response(HTTPStatus.OK)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(core.modules).encode())
+            return
         elif self.path == "/":
             self.send_response(HTTPStatus.OK)
             self.send_header('Content-type', 'text/plain')
