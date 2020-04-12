@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 
 import argparse
+import hashlib
 import http.server
 import json
+import logging
 import os
 import socketserver
+import subprocess
 import sys
 import tempfile
-import subprocess
 import threading
-import hashlib
 
 import core
 
@@ -92,24 +93,35 @@ def get_logs():
     return output_text
 
 
+def check_auth(auth_header) -> bool:
+    if auth_header:
+        hashed = hashlib.sha256(auth_header.encode('utf-8')).hexdigest()
+        valid = hashed == '33d76cd28b1a956224cd74a874a6ee84f473d28c64d7e4cd7356642c68d20fb3'
+        if valid:
+            return True
+        else:
+            logging.info("Bad password attempt")
+            return False
+    else:
+        return False
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     timeout = 5
 
     def do_GET(self):
         if self.path == '/logs':
             auth_header = self.headers.get('Authorization')
-            if auth_header:
-                hashed = hashlib.sha256(auth_header.encode('utf-8')).hexdigest()
-                if hashed == '33d76cd28b1a956224cd74a874a6ee84f473d28c64d7e4cd7356642c68d20fb3':
-                    self.send_response(200)
-                    self.send_header('Content-type', 'text/plain')
-                    self.end_headers()
-                    self.wfile.write(get_logs().encode())
-                    return
-
-            self.send_response(401)
-            self.send_header('WWW-Authenticate', 'Basic')
-            self.end_headers()
+            if check_auth(auth_header):
+                self.send_response(200)
+                self.send_header('Content-type', 'text/plain')
+                self.end_headers()
+                self.wfile.write(get_logs().encode())
+                return
+            else:
+                self.send_response(401)
+                self.send_header('WWW-Authenticate', 'Basic')
+                self.end_headers()
         else:
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
