@@ -93,35 +93,42 @@ def get_logs():
     return output_text
 
 
-def check_auth(auth_header) -> bool:
-    if auth_header:
-        hashed = hashlib.sha256(auth_header.encode('utf-8')).hexdigest()
-        valid = hashed == '33d76cd28b1a956224cd74a874a6ee84f473d28c64d7e4cd7356642c68d20fb3'
-        if valid:
-            return True
-        else:
-            logging.info("Bad password attempt")
-            return False
-    else:
-        return False
-
-
 class Handler(http.server.BaseHTTPRequestHandler):
     timeout = 5
 
+    # Check the authorization header and return whether it is valid
+    def check_auth_header(self) -> bool:
+        auth_header = self.headers.get('Authorization')
+        if auth_header:
+            hashed = hashlib.sha256(auth_header.encode('utf-8')).hexdigest()
+            valid = hashed == '33d76cd28b1a956224cd74a874a6ee84f473d28c64d7e4cd7356642c68d20fb3'
+            if valid:
+                return True
+            else:
+                logging.info("Bad password attempt")
+                return False
+        else:
+            return False
+
+    # Checks authentication and handles writing a response if it is incorrect.
+    def handle_auth(self) -> bool:
+        if self.check_auth_header():
+            return True
+        else:
+            self.send_response(401)
+            self.send_header('WWW-Authenticate', 'Basic')
+            self.end_headers()
+            # TODO try to block further writes?
+            return False
+
     def do_GET(self):
         if self.path == '/logs':
-            auth_header = self.headers.get('Authorization')
-            if check_auth(auth_header):
+            if self.handle_auth():
                 self.send_response(200)
                 self.send_header('Content-type', 'text/plain')
                 self.end_headers()
                 self.wfile.write(get_logs().encode())
-                return
-            else:
-                self.send_response(401)
-                self.send_header('WWW-Authenticate', 'Basic')
-                self.end_headers()
+            return
         else:
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
