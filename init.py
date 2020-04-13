@@ -18,12 +18,12 @@ from typing import Final
 import core
 
 DEFAULT_PORT = 8080
-ALLOWED_REPO_URLS = {'https://github.com/skimberk/saad.git', 'https://github.com/skimberk/saad_example.git'}
-SERVER_REPO_URL: Final = 'https://github.com/skimberk/saad.git'  # Server only updates from one repo
+ALLOWED_REPO_URLS = {"https://github.com/skimberk/saad.git", "https://github.com/skimberk/saad_example.git"}
+SERVER_REPO_URL: Final = "https://github.com/skimberk/saad.git"  # Server only updates from one repo
 
-parser = argparse.ArgumentParser(description='Run saad')
+parser = argparse.ArgumentParser(description="Run saad")
 parser.add_argument('--port',
-                    help='HTTP server port (default is ' + str(DEFAULT_PORT) + ')',
+                    help="HTTP server port (default is " + str(DEFAULT_PORT) + ")",
                     type=int, default=DEFAULT_PORT)
 
 parser.add_argument('--previous_commit', type=str)
@@ -43,23 +43,23 @@ os.chdir(root_path)
 
 
 def update_self(server, script_args):
-    print('RESTARTING')
+    print("RESTARTING")
 
-    print('shutting down http server...')
+    print("shutting down http server...")
     server.shutdown()
     server.server_close()
 
-    print('making sure we are in current directory...')
+    print("making sure we are in current directory...")
     os.chdir(root_path)
-    print('current directory:', os.getcwd())
+    print("current directory:", os.getcwd())
 
-    print('pulling new code from git...')
-    os.system('git pull')
+    print("pulling new code from git...")
+    os.system("git pull")
 
-    print('installing dependencies')
-    os.system('python3 -m pip install --user -r requirements.txt')
+    print("installing dependencies")
+    os.system("python3 -m pip install --user -r requirements.txt")
 
-    print('starting new code...')
+    print("starting new code...")
     os.execv(script_args[0], script_args)
 
 
@@ -79,33 +79,33 @@ def run_on_git(clone_url, current_commit, previous_commit):
         return False
     with tempfile.TemporaryDirectory() as previous_dirname:
         with tempfile.TemporaryDirectory() as current_dirname:
-            print('################')
-            print('Cloning previous commit...\n')
+            print("################")
+            print("Cloning previous commit...\n")
             os.chdir(previous_dirname)
-            os.system('git clone ' + clone_url + ' .')
-            os.system('git config --local advice.detachedHead false')
-            os.system('git checkout ' + previous_commit)
+            os.system("git clone " + clone_url + " .")
+            os.system("git config --local advice.detachedHead false")
+            os.system("git checkout " + previous_commit)
             print()
 
-            print('################')
-            print('Cloning current commit...\n')
+            print("################")
+            print("Cloning current commit...\n")
             os.chdir(current_dirname)
-            os.system('git clone ' + clone_url + ' .')
-            os.system('git config --local advice.detachedHead false')
-            os.system('git checkout ' + current_commit)
+            os.system("git clone " + clone_url + " .")
+            os.system("git config --local advice.detachedHead false")
+            os.system("git checkout " + current_commit)
 
             os.chdir(root_path)
 
-            print('################')
-            print('Running probes...\n')
+            print("################")
+            print("Running probes...\n")
             core.iterate_over_configs(current_dirname, previous_dirname)
 
-            print('################')
-            print('Complete!\n')
+            print("################")
+            print("Complete!\n")
 
 
 def get_logs():
-    command = 'journalctl -n 500 --no-pager -u saad_python_service.service'
+    command = "journalctl -n 500 --no-pager -u saad_python_service.service"
     script = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     output, error = script.communicate()  # TODO include a timeout value?
 
@@ -123,7 +123,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         auth_header = self.headers.get('Authorization')
         if auth_header:
             hashed = hashlib.sha256(auth_header.encode('utf-8')).hexdigest()
-            valid = hashed == '33d76cd28b1a956224cd74a874a6ee84f473d28c64d7e4cd7356642c68d20fb3'
+            valid = hashed == "33d76cd28b1a956224cd74a874a6ee84f473d28c64d7e4cd7356642c68d20fb3"
             if valid:
                 return True
             else:
@@ -153,14 +153,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(message.encode())
 
     def do_GET(self):
-        if self.path == '/logs':
+        if self.path == "/logs":
             if self.handle_auth():
                 self.send_response(HTTPStatus.OK)
                 self.send_header('Content-type', 'text/plain')
                 self.end_headers()
                 self.wfile.write(get_logs().encode())
             return
-        elif self.path == '/modules':
+        elif self.path == "/modules":
             if self.handle_auth():
                 self.send_response(HTTPStatus.OK)
                 self.send_header('Content-type', 'application/json')
@@ -173,7 +173,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 if check_repo_url(repo_url):
                     with tempfile.TemporaryDirectory() as dir:
                         os.chdir(dir)
-                        os.system('git clone ' + repo_url + ' .')
+                        os.system("git clone " + repo_url + " .")
 
                         path = os.path.join(dir, "probe_configs")  # TODO more versatile searching?
                         probes = list(core.all_json_in_dir(path))
@@ -192,16 +192,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
 
-            self.wfile.write('saad.sebastian.io\n'.encode())
-            self.wfile.write('See https://github.com/skimberk/saad'.encode())
+            self.wfile.write("saad.sebastian.io\n".encode())
+            self.wfile.write("See https://github.com/skimberk/saad".encode())
             return
         else:
             self.send_response(HTTPStatus.NOT_FOUND)
             self.send_header('Content-type', 'text/plain')
             self.end_headers()
 
-            self.wfile.write('Page not found :\'(\n\n'.encode())
-            self.wfile.write(('path: ' + self.path).encode())
+            self.wfile.write("Page not found :\'(\n\n".encode())
+            self.wfile.write(("path: " + self.path).encode())
             return
 
     def do_POST(self):
@@ -233,12 +233,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                                    "{\"title\": \"Invalid JSON data\","
                                                    "\"detail\": \"Given JSON data missing expected field(s)\"}")
 
-        if request_path == '/update':
+        if request_path == "/update":
             if clone_url == SERVER_REPO_URL:
                 self.send_response(HTTPStatus.OK)
                 self.send_header('Content-type', 'text/plain')
                 self.end_headers()
-                self.wfile.write('Updating...\n'.encode())
+                self.wfile.write("Updating...\n".encode())
 
                 new_args = [sys.argv[0], '--clone_url', clone_url,
                             '--current_commit', current_commit,
@@ -248,12 +248,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
                                                        "{\"title\": \"Invalid repo URL\","
                                                        "\"detail\": \"Will not update as the provided repo <" + clone_url + "> is not the expected server repo\"}")
-        elif request_path == '/run':
+        elif request_path == "/run":
             if check_repo_url(clone_url):
                 self.send_response(HTTPStatus.OK)
                 self.send_header('Content-type', 'text/plain')
                 self.end_headers()
-                self.wfile.write('Running...\n'.encode())
+                self.wfile.write("Running...\n".encode())
 
                 return run_on_git(clone_url, current_commit, previous_commit)
             else:
@@ -271,12 +271,12 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     allow_reuse_address = True
 
 
-httpd = ThreadedTCPServer(('', args.port), Handler)
+httpd = ThreadedTCPServer(("", args.port), Handler)
 
 if args.previous_commit and args.current_commit and args.clone_url:
-    print('Running on self', args.clone_url, args.current_commit, args.previous_commit)
+    print("Running on self", args.clone_url, args.current_commit, args.previous_commit)
     func_args = (args.clone_url, args.current_commit, args.previous_commit,)
     threading.Thread(target=run_on_git, args=func_args).start()
 
-print('server at port', args.port)
+print("server at port", args.port)
 httpd.serve_forever()
