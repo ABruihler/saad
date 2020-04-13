@@ -98,8 +98,8 @@ def get_logs():
 class Handler(http.server.BaseHTTPRequestHandler):
     timeout = 5
 
-    # Check the authorization header and return whether it is valid
     def check_auth_header(self) -> bool:
+        # Check the authorization header and return whether it is valid
         auth_header = self.headers.get('Authorization')
         if auth_header:
             hashed = hashlib.sha256(auth_header.encode('utf-8')).hexdigest()
@@ -112,8 +112,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         else:
             return False
 
-    # Checks authentication and handles writing a response if it is incorrect.
     def handle_auth(self) -> bool:
+        # Checks authentication and handles writing a response if it is incorrect.
         if self.check_auth_header():
             return True
         else:
@@ -164,7 +164,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.wfile.write(json.dumps(probes).encode())
                 else:
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
-                                                           "{\"title\": \"Invalid repo URL\",\"detail\": \"Provided repo <" + repo_url + "> is not tracked.\"}")
+                                                           "{\"title\": \"Invalid repo URL\","
+                                                           "\"detail\": \"Provided repo <" + repo_url + "> is not tracked.\"}")
             return
         elif self.path == "/":
             self.send_response(HTTPStatus.OK)
@@ -188,11 +189,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         # Git webhook for running SAAD on a repo
         if self.headers.get('content-type') != 'application/json':
-            self.send_response(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
-            self.send_header('Content-type', 'text/plain')
-            self.end_headers()
-            self.wfile.write('request must have content-type application/json\n'.encode())
-            return
+            return self.write_json_problem_details(HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                                                   "{\"title\": \"Invalid content-type\","
+                                                   "\"detail\": \"Expected request to have content-type application/json (got " + self.headers.get('content-type') + ")\"}")
 
         content_length = int(self.headers['Content-Length'])
         body = self.rfile.read(content_length)
@@ -200,11 +199,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         try:
             params = json.loads(body.decode('utf-8'))
         except ValueError:
-            self.send_response(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
-            self.send_header('Content-type', 'text/plain')
-            self.end_headers()
-            self.wfile.write('data must be json\n'.encode())
-            return
+            return self.write_json_problem_details(HTTPStatus.BAD_REQUEST,
+                                                   "{\"title\": \"Invalid JSON data\","
+                                                   "\"detail\": \"Unable to load given JSON data\"}")
 
         try:
             ref = params['ref']
@@ -212,11 +209,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             current_commit = params['after']
             clone_url = params['repository']['clone_url']
         except KeyError:
-            self.send_response(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
-            self.send_header('Content-type', 'text/plain')
-            self.end_headers()
-            self.wfile.write('data must be from Github webhook\n'.encode())
-            return
+            return self.write_json_problem_details(HTTPStatus.BAD_REQUEST,
+                                                   "{\"title\": \"Invalid JSON data\","
+                                                   "\"detail\": \"Given JSON data missing expected field(s)\"}")
 
         self.send_response(HTTPStatus.OK)
         self.send_header('Content-type', 'text/plain')
