@@ -6,6 +6,7 @@ import http.server
 import json
 import logging
 import os
+import re
 import socketserver
 import subprocess
 import sys
@@ -122,6 +123,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # TODO try to block further writes?
             return False
 
+    def write_json_problem_details(self, code, message):
+        # Respond with a JSON problem details message
+        # Content-type is set to application/problem+json and the status code is set as specified.
+        # (See RFC 7807: <https://tools.ietf.org/html/rfc7807>)
+        self.send_response(code)
+        self.send_header('Content-type', 'application/problem+json')
+        self.end_headers()
+        self.wfile.write(message.encode())
+
     def do_GET(self):
         if self.path == '/logs':
             if self.handle_auth():
@@ -136,6 +146,25 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.send_header('Content-type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps(core.modules).encode())
+            return
+        elif re.match(r'/probes/(.+)', self.path):
+            if self.handle_auth():
+                repo_url = re.match(r'/probes/(.+)', self.path).group(1)
+                if repo_url == 'https://github.com/skimberk/saad.git':  # TODO handle different repos
+                    with tempfile.TemporaryDirectory() as dir:
+                        os.chdir(dir)
+                        os.system('git clone ' + repo_url + ' .')
+
+                        path = os.path.join(dir, "probe_configs")  # TODO more versatile searching?
+                        probes = list(core.all_json_in_dir(path))
+
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps(probes).encode())
+                else:
+                    return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
+                                                           "{\"title\": \"Invalid repo URL\",\"detail\": \"Provided repo <" + repo_url + "> is not tracked.\"}")
             return
         elif self.path == "/":
             self.send_response(HTTPStatus.OK)
