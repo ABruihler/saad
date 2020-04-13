@@ -13,10 +13,13 @@ import sys
 import tempfile
 import threading
 from http import HTTPStatus
+from typing import Final
 
 import core
 
 DEFAULT_PORT = 8080
+ALLOWED_REPO_URLS = {'https://github.com/skimberk/saad.git', 'https://github.com/skimberk/saad_example.git'}
+SERVER_REPO_URL: Final = 'https://github.com/skimberk/saad.git'  # Server only updates from one repo
 
 parser = argparse.ArgumentParser(description='Run saad')
 parser.add_argument('--port',
@@ -28,6 +31,10 @@ parser.add_argument('--current_commit', type=str)
 parser.add_argument('--clone_url', type=str)
 
 args = parser.parse_args()
+
+if (args.clone_url is not None) and (args.clone_url not in ALLOWED_REPO_URLS):
+    logging.info("Adding command line URL to ALLOWED_URLs: " + args.clone_url)
+    ALLOWED_REPO_URLS.add(args.clone_url)
 
 httpd = None
 
@@ -56,7 +63,20 @@ def update_self(server, script_args):
     os.execv(script_args[0], script_args)
 
 
+def check_repo_url(url) -> bool:
+    # Check that a provided URL for a repo is allowed
+    # TODO better storing/updating of the list
+    if url in ALLOWED_REPO_URLS:
+        return True
+    else:
+        logging.info("Invalid repo URL: " + url)
+        return False
+
+
 def run_on_git(clone_url, current_commit, previous_commit):
+    if not check_repo_url(clone_url):
+        logging.warning("Not running due to invalid repo URL:" + clone_url)
+        return False
     with tempfile.TemporaryDirectory() as previous_dirname:
         with tempfile.TemporaryDirectory() as current_dirname:
             print('################')
@@ -150,7 +170,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif re.match(r'/probes/(.+)', self.path):
             if self.handle_auth():
                 repo_url = re.match(r'/probes/(.+)', self.path).group(1)
-                if repo_url == 'https://github.com/skimberk/saad.git':  # TODO handle different repos
+                if check_repo_url(repo_url):
                     with tempfile.TemporaryDirectory() as dir:
                         os.chdir(dir)
                         os.system('git clone ' + repo_url + ' .')
@@ -213,19 +233,37 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                                    "{\"title\": \"Invalid JSON data\","
                                                    "\"detail\": \"Given JSON data missing expected field(s)\"}")
 
-        self.send_response(HTTPStatus.OK)
-        self.send_header('Content-type', 'text/plain')
-        self.end_headers()
-        self.wfile.write('running...\n'.encode())
-
         if request_path == '/update':
-            new_args = [sys.argv[0], '--clone_url', clone_url,
-                        '--current_commit', current_commit,
-                        '--previous_commit', previous_commit]
+            if clone_url == SERVER_REPO_URL:
+                self.send_response(HTTPStatus.OK)
+                self.send_header('Content-type', 'text/plain')
+                self.end_headers()
+                self.wfile.write('Updating...\n'.encode())
 
-            threading.Thread(target=update_self, args=(httpd, new_args,)).start()
+                new_args = [sys.argv[0], '--clone_url', clone_url,
+                            '--current_commit', current_commit,
+                            '--previous_commit', previous_commit]
+                return threading.Thread(target=update_self, args=(httpd, new_args,)).start()
+            else:
+                return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
+                                                       "{\"title\": \"Invalid repo URL\","
+                                                       "\"detail\": \"Will not update as the provided repo <" + clone_url + "> is not the expected server repo\"}")
         elif request_path == '/run':
-            run_on_git(clone_url, current_commit, previous_commit)
+            if check_repo_url(clone_url):
+                self.send_response(HTTPStatus.OK)
+                self.send_header('Content-type', 'text/plain')
+                self.end_headers()
+                self.wfile.write('Running...\n'.encode())
+
+                return run_on_git(clone_url, current_commit, previous_commit)
+            else:
+                return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
+                                                       "{\"title\": \"Invalid repo URL\","
+                                                       "\"detail\": \"Provided repo <" + clone_url + "> is not tracked.\"}")
+        else:
+            self.send_response(HTTPStatus.NOT_FOUND)
+            self.end_headers()
+            return
 
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
