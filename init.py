@@ -145,10 +145,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def write_json_problem_details(self, code, message):
         # Respond with a JSON problem details message
-        # Content-type is set to application/problem+json and the status code is set as specified.
+        # Content-Type is set to application/problem+json and the status code is set as specified.
         # (See RFC 7807: <https://tools.ietf.org/html/rfc7807>)
         self.send_response(code)
-        self.send_header('Content-type', 'application/problem+json')
+        self.send_header('Content-Type', 'application/problem+json')
         self.end_headers()
         self.wfile.write(message.encode())
 
@@ -156,14 +156,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if self.path == "/logs":
             if self.handle_auth():
                 self.send_response(HTTPStatus.OK)
-                self.send_header('Content-type', 'text/plain')
+                self.send_header('Content-Type', 'text/plain')
                 self.end_headers()
                 self.wfile.write(get_logs().encode())
             return
         elif self.path == "/modules":
             if self.handle_auth():
                 self.send_response(HTTPStatus.OK)
-                self.send_header('Content-type', 'application/json')
+                self.send_header('Content-Type', 'application/json')
                 self.end_headers()
                 self.wfile.write(json.dumps(core.modules).encode())
             return
@@ -179,7 +179,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         probes = list(core.all_json_in_dir(path))
 
                     self.send_response(HTTPStatus.OK)
-                    self.send_header('Content-type', 'application/json')
+                    self.send_header('Content-Type', 'application/json')
                     self.end_headers()
                     self.wfile.write(json.dumps(probes).encode())
                 else:
@@ -189,7 +189,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
         elif self.path == "/":
             self.send_response(HTTPStatus.OK)
-            self.send_header('Content-type', 'text/plain')
+            self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
             self.wfile.write("saad.sebastian.io\n".encode())
@@ -197,7 +197,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
         else:
             self.send_response(HTTPStatus.NOT_FOUND)
-            self.send_header('Content-type', 'text/plain')
+            self.send_header('Content-Type', 'text/plain')
             self.end_headers()
 
             self.wfile.write("Page not found :\'(\n\n".encode())
@@ -208,10 +208,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
         request_path = self.path
 
         # Git webhook for running SAAD on a repo
-        if self.headers.get('content-type') != 'application/json':
+        if self.headers.get('Content-Type') != 'application/json':
             return self.write_json_problem_details(HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
-                                                   "{\"title\": \"Invalid content-type\","
-                                                   "\"detail\": \"Expected request to have content-type application/json (got " + self.headers.get('content-type') + ")\"}")
+                                                   "{\"title\": \"Invalid Content-Type\","
+                                                   "\"detail\": \"Expected request to have Content-Type application/json (got " + self.headers.get('Content-Type') + ")\"}")
 
         content_length = int(self.headers['Content-Length'])
         body = self.rfile.read(content_length)
@@ -236,7 +236,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if request_path == "/update":
             if clone_url == SERVER_REPO_URL:
                 self.send_response(HTTPStatus.OK)
-                self.send_header('Content-type', 'text/plain')
+                self.send_header('Content-Type', 'text/plain')
                 self.end_headers()
                 self.wfile.write("Updating...\n".encode())
 
@@ -251,7 +251,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif request_path == "/run":
             if check_repo_url(clone_url):
                 self.send_response(HTTPStatus.OK)
-                self.send_header('Content-type', 'text/plain')
+                self.send_header('Content-Type', 'text/plain')
                 self.end_headers()
                 self.wfile.write("Running...\n".encode())
 
