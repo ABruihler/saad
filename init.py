@@ -165,7 +165,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.send_response(HTTPStatus.OK)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                self.wfile.write(json.dumps(core.modules).encode())
+                data = {}
+                for name, module in core.modules.items():
+                    data[name] = module.config
+                self.wfile.write(json.dumps(data).encode())
             return
         elif re.match(r'/probes/(.+)', self.path):
             if self.handle_auth():
