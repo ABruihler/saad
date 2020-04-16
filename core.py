@@ -59,10 +59,10 @@ def all_json_in_dir(dir_path):
 
 class Scope:
     def __init__(self, bindings):
-        self.bindings={}
+        self.bindings = {}
         self.bind_vars(bindings)
-    
-    def bind_vars(self,bindings):
+
+    def bind_vars(self, bindings):
         for binding in bindings.keys():
             self.bindings[binding]=bindings[binding]
     
@@ -74,17 +74,17 @@ class Probe:
 
     def __init__(self, data, scope):
         global running_probes
-        self.module=modules[data['type']]
-        self.headers={}
-        for key,value in data.items():
-            if(key=='config'):
-                self.inputs=value
+        self.module = modules[data['type']]
+        self.headers = {}
+        for key, value in data.items():
+            if (key == 'config'):
+                self.inputs = value
             else:
-                self.headers[key]=value
-        self.scope=scope
-        self.status="Waiting"
-        self.pid=None
-    
+                self.headers[key] = value
+        self.scope = scope
+        self.status = "Waiting"
+        self.pid = None
+
     def run(self):
         global running_probes
 
@@ -95,8 +95,8 @@ class Probe:
         populated_command = insert_named_values(populated_command, self.scope.bindings)
 
         self.script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        self.pid=self.script.pid
-        running_probes[self.pid]=self
+        self.pid = self.script.pid
+        running_probes[self.pid] = self
         timeout = self.inputs.get("timeout", self.module.config.get("timeout", modules.get("defaultTimeout").config))
         assert timeout > 0
         try:
@@ -107,10 +107,11 @@ class Probe:
             # TODO figure out a way to handle this properly and terminate the actual commands that run
         except subprocess.TimeoutExpired:
             terminate_t = time.time()
-            logging.warning("Script %s timed out after %ds, attempting to terminate", module_type, timeout)
+            logging.warning("Script %s timed out after %ds, attempting to terminate", self.module.name, timeout)
             self.script.terminate()
             output, error = self.script.communicate()
-            logging.warning("Script %s timed out, finished terminating (took %ds)", module_type, time.time() - terminate_t)
+            logging.warning("Script %s timed out, finished terminating (took %ds)", self.module.name,
+                            time.time() - terminate_t)
             self.log()
 
         output = output.decode('utf-8')
@@ -126,8 +127,10 @@ class Probe:
 
     def log(self):
         return None
+
     def kill(self):
         return None
+
     def evaluate_condition(self):
         try:
             condition = self.inputs['condition']
@@ -139,16 +142,14 @@ class Probe:
 
     def __str__(self):
         print({'headers':self.headers,'inputs':self.inputs})
-    
-    
 
 class Module:
     def __init__(self, name, config):
-        self.name=name
-        self.config=config #equivalent to modules[name]
-    
-    def run_probe(self, config_inputs, bound_values):
-        p=Probe(self,config_inputs,bound_values)
+        self.name = name
+        self.config = config  # equivalent to modules[name]
+
+    def run_probe(self, probe_inputs, scope):
+        p = Probe(probe_inputs, scope)
         return p.run()
     
     def __str__(self):
@@ -164,13 +165,14 @@ def load_modules():
             if key in modules:
                 # Module of same type was already defined somewhere else
                 raise ValueError("Duplicate module")
-
-            modules[key] = Module(key,value)
+            modules[key] = Module(key, value)
 
     return modules
 
+
 modules = load_modules()
 running_probes = {}
+
 
 def iterate_over_configs(current_commit_dir, previous_commit_dir):
     path = os.path.join(current_commit_dir, 'probe_configs')
@@ -181,16 +183,15 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
         "HEAD~1": previous_commit_dir
     }
 
-    #Loop over all files
+    # Loop over all files
     for configs in all_json_in_dir(path):
-        scope=Scope(default_variables)
+        scope = Scope(default_variables)
         for probe_config in configs:
-            probe=Probe(probe_config,scope)
+            probe = Probe(probe_config, scope)
             if probe.evaluate_condition():
-            
-                result=probe.run()
+                result = probe.run()
                 if 'name' in probe.headers:
-                    scope.bind_vars({probe.headers['name']:result})
+                    scope.bind_vars({probe.headers['name']: result})
 
 
 def iterate_over_configs_parallel(current_commit_dir, previous_commit_dir):
