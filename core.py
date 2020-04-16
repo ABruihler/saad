@@ -65,6 +65,9 @@ class Scope:
     def bind_vars(self,bindings):
         for binding in bindings.keys():
             self.bindings[binding]=bindings[binding]
+    
+    def __str__(self):
+        print(self.bindings)
 
 
 class Probe:
@@ -134,6 +137,11 @@ class Probe:
         populated_condition = insert_named_values(condition, self.scope.bindings)
         return eval(populated_condition)
 
+    def __str__(self):
+        print({'headers':self.headers,'inputs':self.inputs})
+    
+    
+
 class Module:
     def __init__(self, name, config):
         self.name=name
@@ -142,6 +150,9 @@ class Module:
     def run_probe(self, config_inputs, bound_values):
         p=Probe(self,config_inputs,bound_values)
         return p.run()
+    
+    def __str__(self):
+        print(self.config)
 
 
 def load_modules():
