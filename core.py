@@ -11,9 +11,9 @@ from pathlib import Path
 
 
 # Replace curly-brace surrounded variables with
-# the corresponding value in 'values'
-# Example: insert_named_valued('Hello {name}', {'name': 'Bob'})
-# -> 'Hello Bob'
+# the corresponding value in values
+# Example: insert_named_valued("Hello {name}", {'name': "'Bob"})
+# -> "Hello Bob"
 # Variables with no corresponding value are left as is (i.e. "{variable}")
 def insert_named_values(string, values):
     return re.sub(r'{([a-zA-Z0-9_~]+)}', lambda m: swap_named_value(m, values), str(string))
@@ -51,7 +51,7 @@ def parse_json_file(file_path):
 def all_json_in_dir(dir_path):
     # Search recursively in order to allow user to decide
     # their preferred method of organization
-    pathlist = Path(dir_path).glob('**/*.json')
+    pathlist = Path(dir_path).glob("**/*.json")
     for path in pathlist:
         parsed = parse_json_file(str(path))
         yield parsed
@@ -147,12 +147,12 @@ class Module:
 def load_modules():
     modules = {}
 
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'module_configs')
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "module_configs")
     for config in all_json_in_dir(path):
         for key, value in config.items():
             if key in modules:
                 # Module of same type was already defined somewhere else
-                raise ValueError('Duplicate module')
+                raise ValueError("Duplicate module")
 
             modules[key] = Module(key,value)
 
@@ -166,8 +166,8 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
 
     # Default variables that can be accessed in module/monitoring configs
     default_variables = {
-        'HEAD': current_commit_dir,
-        'HEAD~1': previous_commit_dir
+        "HEAD": current_commit_dir,
+        "HEAD~1": previous_commit_dir
     }
 
     #Loop over all files
@@ -184,13 +184,13 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
 
 def iterate_over_configs_parallel(current_commit_dir, previous_commit_dir):
     logging.info("Running parallel version of iterate_over_configs")
-    path = os.path.join(current_commit_dir, 'probe_configs')
+    path = os.path.join(current_commit_dir, "probe_configs")
 
     # Default variables that can be accessed in module/monitoring configs
     # TODO address multiple probes working in same directory at same time?
     default_variables = {
-        'HEAD': current_commit_dir,
-        'HEAD~1': previous_commit_dir
+        "HEAD": current_commit_dir,
+        "HEAD~1": previous_commit_dir
     }
 
     with ThreadPoolExecutor() as executor:

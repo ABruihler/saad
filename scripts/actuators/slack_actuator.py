@@ -17,7 +17,7 @@ def actuate_simple(token: str, channel: str, text: str) -> bool:
         response = client.chat_postMessage(
             channel=channel,
             text=text)
-        assert response["ok"]
+        assert response['ok']
         return True
     except SlackClientError as e:
         handle_slack_error(e)
@@ -31,7 +31,7 @@ def actuate_blocks(token: str, channel: str, text: str, blocks: List[Optional[Di
             channel=channel,
             text=text,
             blocks=blocks)
-        assert response["ok"]
+        assert response['ok']
         return True
     except SlackClientError as e:
         handle_slack_error(e)
@@ -56,7 +56,7 @@ def main():
         print_usage()
         return
     mode = sys.argv[1]
-    if mode == "--simple":
+    if mode == '--simple':
         if sys.argv.__len__() == 5:
             # Normal case with a simple message
             token: Final = sys.argv[2]
@@ -67,7 +67,7 @@ def main():
             print_usage()
             print_args_count()
             return
-    elif mode == "--blocks":
+    elif mode == '--blocks':
         if sys.argv.__len__() == 6:
             # Supported for more advanced message formats using blocks
             token: Final = sys.argv[2]
@@ -79,7 +79,7 @@ def main():
             print_usage()
             print_args_count()
             return
-    elif mode == "--help" or mode == "-h":
+    elif mode == '--help' or mode == '-h':
         print_usage()
         return
     else:

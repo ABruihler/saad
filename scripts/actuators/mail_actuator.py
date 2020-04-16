@@ -5,12 +5,12 @@ from email.message import EmailMessage
 
 # should initialize the following on startup / in config:
 
-SMTP_SERVER = 'smtp.gmail.com'
+SMTP_SERVER = "smtp.gmail.com"
 PORT = 465
 
 
 def send_email(sender_mail, receiver_mail, message, smtp_server=SMTP_SERVER):
-    password = getpass.getpass('Password: ')  # temporary / for testing
+    password = getpass.getpass("Password: ")  # temporary / for testing
 
     msg = EmailMessage()
     msg.set_content(message[1])
