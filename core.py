@@ -64,20 +64,19 @@ class Scope:
 
     def bind_vars(self, bindings):
         for binding in bindings.keys():
-            self.bindings[binding]=bindings[binding]
-    
+            self.bindings[binding] = bindings[binding]
+
     def __str__(self):
-        print(self.bindings)
+        return str(self.bindings)
 
 
 class Probe:
-
     def __init__(self, data, scope):
         global running_probes
         self.module = modules[data['type']]
         self.headers = {}
         for key, value in data.items():
-            if (key == 'config'):
+            if key == 'config':
                 self.inputs = value
             else:
                 self.headers[key] = value
@@ -141,7 +140,8 @@ class Probe:
         return eval(populated_condition)
 
     def __str__(self):
-        print({'headers':self.headers,'inputs':self.inputs})
+        return str({'headers': self.headers, 'inputs': self.inputs})
+
 
 class Module:
     def __init__(self, name, config):
@@ -151,9 +151,9 @@ class Module:
     def run_probe(self, probe_inputs, scope):
         p = Probe(probe_inputs, scope)
         return p.run()
-    
+
     def __str__(self):
-        print(self.config)
+        return str(self.config)
 
 
 def load_modules():
@@ -168,10 +168,6 @@ def load_modules():
             modules[key] = Module(key, value)
 
     return modules
-
-
-modules = load_modules()
-running_probes = {}
 
 
 def iterate_over_configs(current_commit_dir, previous_commit_dir):
@@ -195,6 +191,7 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
 
 
 def iterate_over_configs_parallel(current_commit_dir, previous_commit_dir):
+    raise NotImplementedError  # TODO fix after refactor
     logging.info("Running parallel version of iterate_over_configs")
     path = os.path.join(current_commit_dir, "probe_configs")
 
@@ -212,6 +209,10 @@ def iterate_over_configs_parallel(current_commit_dir, previous_commit_dir):
         logging.info("All configs submitted to thread pool")
 
     logging.info("All config threads finished")
+
+
+modules = load_modules()
+running_probes = {}
 
 
 if __name__ == "__main__":
