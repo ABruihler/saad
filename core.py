@@ -57,6 +57,105 @@ def all_json_in_dir(dir_path):
         yield parsed
 
 
+class Scope:
+    def __init__(self, bindings):
+        self.bindings = {}
+        self.bind_vars(bindings)
+
+    def bind_vars(self, bindings):
+        for binding in bindings.keys():
+            self.bindings[binding] = bindings[binding]
+
+    def __str__(self):
+        return str(self.bindings)
+
+
+class Probe:
+    def __init__(self, data, scope):
+        global running_probes
+        self.module = modules[data['type']]
+        self.headers = {}
+        for key, value in data.items():
+            if key == 'config':
+                self.inputs = value
+            else:
+                self.headers[key] = value
+        self.scope = scope
+        self.status = "Waiting"
+        self.pid = None
+
+    def run(self):
+        global running_probes
+
+        populated_config = {k: insert_named_values(v, self.scope.bindings) for k, v in self.inputs.items()}
+        quoted_config = {k: shlex.quote(v) for k, v in populated_config.items()}
+
+        populated_command = insert_named_values(self.module.config['command'], quoted_config)
+        populated_command = insert_named_values(populated_command, self.scope.bindings)
+
+        self.script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        self.pid = self.script.pid
+        running_probes[self.pid] = self
+        timeout = self.inputs.get("timeout", self.module.config.get("timeout", modules.get("defaultTimeout").config))
+        assert timeout > 0
+        try:
+            output, error = self.script.communicate(timeout=timeout)
+            self.log()
+            # Note: this doesn't seem to really work as intended, because we have shell=True in the Popen() call
+            # From what I can tell the terminate()/kill() call is called on the opened shell, not on the started commands
+            # TODO figure out a way to handle this properly and terminate the actual commands that run
+        except subprocess.TimeoutExpired:
+            terminate_t = time.time()
+            logging.warning("Script %s timed out after %ds, attempting to terminate", self.module.name, timeout)
+            self.script.terminate()
+            output, error = self.script.communicate()
+            logging.warning("Script %s timed out, finished terminating (took %ds)", self.module.name,
+                            time.time() - terminate_t)
+            self.log()
+
+        output = output.decode('utf-8')
+        error = error.decode('utf-8')
+
+        # TODO: handle errors and return values better
+        if error != '':
+            print(error)
+            return False
+        else:
+            print(output)
+            return output
+
+    def log(self):
+        return None
+
+    def kill(self):
+        return None
+
+    def evaluate_condition(self):
+        try:
+            condition = self.inputs['condition']
+        except KeyError:
+            return True
+
+        populated_condition = insert_named_values(condition, self.scope.bindings)
+        return eval(populated_condition)
+
+    def __str__(self):
+        return str({'headers': self.headers, 'inputs': self.inputs})
+
+
+class Module:
+    def __init__(self, name, config):
+        self.name = name
+        self.config = config  # equivalent to modules[name]
+
+    def run_probe(self, probe_inputs, scope):
+        p = Probe(probe_inputs, scope)
+        return p.run()
+
+    def __str__(self):
+        return str(self.config)
+
+
 def load_modules():
     modules = {}
 
@@ -66,69 +165,9 @@ def load_modules():
             if key in modules:
                 # Module of same type was already defined somewhere else
                 raise ValueError("Duplicate module")
-
-            modules[key] = value
+            modules[key] = Module(key, value)
 
     return modules
-
-
-modules = load_modules()
-
-
-def run_module(module_type, config, bound_values):
-    module = modules[module_type]
-
-    populated_config = {k: insert_named_values(v, bound_values) for k, v in config.items()}
-    quoted_config = {k: shlex.quote(v) for k, v in populated_config.items()}
-
-    populated_command = insert_named_values(module['command'], quoted_config)
-
-    script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    timeout = config.get('timeout', module.get('timeout', modules.get('defaultTimeout')))
-    assert timeout > 0
-    try:
-        output, error = script.communicate(timeout=timeout)
-        # Note: this doesn't seem to really work as intended, because we have shell=True in the Popen() call
-        # From what I can tell the terminate()/kill() call is called on the opened shell, not on the started commands
-        # TODO figure out a way to handle this properly and terminate the actual commands that run
-    except subprocess.TimeoutExpired:
-        terminate_t = time.time()
-        logging.warning("Script %s timed out after %ds, attempting to terminate", module_type, timeout)
-        script.terminate()
-        output, error = script.communicate()
-        logging.warning("Script %s timed out, finished terminating (took %ds)", module_type, time.time() - terminate_t)
-
-    output = output.decode('utf-8')
-    error = error.decode('utf-8')
-
-    # TODO: handle errors and return values better
-    if error != "":
-        print(error)
-        return False
-    else:
-        print(output)
-        return output
-
-
-def handle_config(config, default_variables):
-    bound_values = default_variables.copy()
-
-    for module in config:
-        module_config = merge_two_dicts(default_variables, module['config'])
-        if evaluate_condition(module_config, bound_values):
-            output = run_module(module['type'], module_config, bound_values)
-            if 'name' in module:
-                bound_values[module['name']] = output
-
-
-def evaluate_condition(module_config, bound_values):
-    try:
-        condition = module_config['condition']
-    except KeyError:
-        return True
-
-    populated_condition = insert_named_values(condition, bound_values)
-    return eval(populated_condition)
 
 
 def iterate_over_configs(current_commit_dir, previous_commit_dir):
@@ -140,11 +179,19 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
         "HEAD~1": previous_commit_dir
     }
 
-    for config in all_json_in_dir(path):
-        handle_config(config, default_variables)
+    # Loop over all files
+    for configs in all_json_in_dir(path):
+        scope = Scope(default_variables)
+        for probe_config in configs:
+            probe = Probe(probe_config, scope)
+            if probe.evaluate_condition():
+                result = probe.run()
+                if 'name' in probe.headers:
+                    scope.bind_vars({probe.headers['name']: result})
 
 
 def iterate_over_configs_parallel(current_commit_dir, previous_commit_dir):
+    raise NotImplementedError  # TODO fix after refactor
     logging.info("Running parallel version of iterate_over_configs")
     path = os.path.join(current_commit_dir, "probe_configs")
 
@@ -162,6 +209,10 @@ def iterate_over_configs_parallel(current_commit_dir, previous_commit_dir):
         logging.info("All configs submitted to thread pool")
 
     logging.info("All config threads finished")
+
+
+modules = load_modules()
+running_probes = {}
 
 
 if __name__ == "__main__":
