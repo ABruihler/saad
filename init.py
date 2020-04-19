@@ -160,7 +160,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(get_logs().encode())
             return
-        elif self.path == "/modules":
+        elif self.path == "/api/modules":
             if self.handle_auth():
                 self.send_response(HTTPStatus.OK)
                 self.send_header('Content-Type', 'application/json')
@@ -170,9 +170,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     data[name] = module.config
                 self.wfile.write(json.dumps(data).encode())
             return
-        elif re.match(r'/probes/(.+)', self.path):
+        elif re.match(r'/api/probes/(.+)', self.path):
             if self.handle_auth():
-                repo_url = re.match(r'/probes/(.+)', self.path).group(1)
+                repo_url = re.match(r'/api/probes/(.+)', self.path).group(1)
                 if check_repo_url(repo_url):
                     with tempfile.TemporaryDirectory() as dir:
                         os.chdir(dir)
