@@ -6,7 +6,6 @@ import http.server
 import json
 import logging
 import os
-import re
 import socketserver
 import subprocess
 import sys
@@ -170,9 +169,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     data[name] = module.config
                 self.wfile.write(json.dumps(data).encode())
             return
-        elif re.match(r'/api/probes/(.+)', self.path):
+        elif self.path[:len("/api/probes/")] == "/api/probes/":
             if self.handle_auth():
-                repo_url = re.match(r'/api/probes/(.+)', self.path).group(1)
+                repo_url = self.path[len("/api/probes/"):]
                 if check_repo_url(repo_url):
                     with tempfile.TemporaryDirectory() as dir:
                         os.chdir(dir)
