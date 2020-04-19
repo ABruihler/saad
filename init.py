@@ -12,6 +12,7 @@ import sys
 import tempfile
 import threading
 from http import HTTPStatus
+from os.path import basename
 from typing import Final
 
 import core
@@ -169,6 +170,26 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     data[name] = module.config
                 self.wfile.write(json.dumps(data).encode())
             return
+        elif self.path == "/modules":
+            if self.handle_auth():
+                data = {}
+                for name, module in core.modules.items():
+                    data[name] = module.config
+                datajson = json.dumps(data, indent=4)
+
+                self.send_response(HTTPStatus.OK)
+                self.send_header('Content-Type', 'text/html')
+                self.end_headers()
+
+                self.wfile.write("<head><style type=\"text/css\">code { white-space: pre; }</style></head>".encode())
+                self.wfile.write("<body>\n".encode())
+                self.wfile.write("<h1>Modules config</h1>\n".encode())
+                self.wfile.write("<code>\n".encode())
+                self.wfile.write(datajson.encode())
+                self.wfile.write("\n".encode())
+                self.wfile.write("</code>\n".encode())
+                self.wfile.write("</body>\n".encode())
+            return
         elif self.path[:len("/api/probes/")] == "/api/probes/":
             if self.handle_auth():
                 repo_url = self.path[len("/api/probes/"):]
@@ -185,6 +206,42 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.end_headers()
                     self.wfile.write(json.dumps(probes).encode())
                 else:
+                    return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
+                                                           "{\"title\": \"Invalid repo URL\","
+                                                           "\"detail\": \"Provided repo <" + repo_url + "> is not tracked.\"}")
+            return
+        elif self.path[:len("/probes/")] == "/probes/":
+            if self.handle_auth():
+                repo_url = self.path[len("/probes/"):]
+                repo_name = basename(repo_url)
+                if repo_name[-len(".git"):] == ".git":
+                    repo_name = repo_name[:len(".git")]
+
+                if check_repo_url(repo_url):
+                    with tempfile.TemporaryDirectory() as dir:
+                        os.chdir(dir)
+                        os.system("git clone " + repo_url + " .")
+                        path = os.path.join(dir, "probe_configs")
+                                # TODO more versatile searching?
+                        probes = list(core.all_json_in_dir(path))
+                    datajson = json.dumps(probes, indent=4)
+
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header('Content-Type', 'text/html')
+                    self.end_headers()
+
+                    self.wfile.write("<head><style type=\"text/css\">code { white-space: pre; }</style></head>".encode())
+                    self.wfile.write("<body>\n".encode())
+                    self.wfile.write("<h1>Probes</h1>\n".encode())
+                    self.wfile.write(("Probes for <a href=\"" + repo_url + "\">" + repo_name + "</a>").encode())
+                    self.wfile.write("<code>\n".encode())
+                    self.wfile.write(datajson.encode())
+                    self.wfile.write("\n".encode())
+                    self.wfile.write("</code>\n".encode())
+                    self.wfile.write("</body>\n".encode())
+                    return
+                else:
+                    # TODO return user friendly details
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
                                                            "{\"title\": \"Invalid repo URL\","
                                                            "\"detail\": \"Provided repo <" + repo_url + "> is not tracked.\"}")
