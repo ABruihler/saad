@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="38af768c-c3c1-4f03-ba79-96dcd2457761" name="Default Changelist" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="LogFilters">
+    <option name="FILTER_ERRORS" value="false" />
+    <option name="FILTER_WARNINGS" value="false" />
+    <option name="FILTER_INFO" value="true" />
+    <option name="FILTER_DEBUG" value="true" />
+    <option name="CUSTOM_FILTER" />
+  </component>
+  <component name="ProjectId" id="1aW2oRuuHmuR9K5leZZ5F0ZiL33" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../external_libs/json-20190722.jar!/" />
+    <property name="project.structure.last.edited" value="Modules" />
+    <property name="project.structure.proportion" value="0.15" />
+    <property name="project.structure.side.proportion" value="0.2" />
+    <property name="settings.editor.selected.configurable" value="preferences.editor" />
+  </component>
+  <component name="RunManager">
+    <configuration name="Plugin" type="#org.jetbrains.idea.devkit.run.PluginConfigurationType">
+      <module name="saad_plugin" />
+      <option name="VM_PARAMETERS" value="-Xmx512m -Xms256m -ea" />
+      <option name="PROGRAM_PARAMETERS" />
+      <predefined_log_file enabled="true" id="idea.log" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="#org.jetbrains.idea.devkit.run.PluginConfigurationType">
+      <module name="saad_plugin" />
+      <option name="VM_PARAMETERS" value="-Xmx512m -Xms256m -ea" />
+      <option name="PROGRAM_PARAMETERS" />
+      <predefined_log_file enabled="true" id="idea.log" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="38af768c-c3c1-4f03-ba79-96dcd2457761" name="Default Changelist" comment="" />
+      <created>1586837204391</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1586837204391</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="555" y="180" width="800" height="669" key="#Project_Structure" timestamp="1586837232854">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="555" y="180" width="800" height="669" key="#Project_Structure/0.0.1920.1080@0.0.1920.1080" timestamp="1586837232854" />
+    <state x="418" y="177" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1587160195643">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="418" y="177" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1920.1080@0.0.1920.1080" timestamp="1587160195643" />
+    <state x="768" y="231" width="374" height="567" key="#com.intellij.ide.util.MemberChooser" timestamp="1586838802883">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="768" y="231" width="374" height="567" key="#com.intellij.ide.util.MemberChooser/0.0.1920.1080@0.0.1920.1080" timestamp="1586838802883" />
+    <state x="265" y="167" width="424" height="476" key="FileChooserDialogImpl" timestamp="1587174231801">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="265" y="167" width="424" height="476" key="FileChooserDialogImpl/0.0.1920.1080@0.0.1920.1080" timestamp="1587174231801" />
+    <state width="1874" height="357" key="GridCell.Tab.0.bottom" timestamp="1587229045589">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="357" key="GridCell.Tab.0.bottom/0.0.1920.1080@0.0.1920.1080" timestamp="1587229045589" />
+    <state width="1874" height="357" key="GridCell.Tab.0.center" timestamp="1587229045588">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="357" key="GridCell.Tab.0.center/0.0.1920.1080@0.0.1920.1080" timestamp="1587229045588" />
+    <state width="1874" height="357" key="GridCell.Tab.0.left" timestamp="1587229045586">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="357" key="GridCell.Tab.0.left/0.0.1920.1080@0.0.1920.1080" timestamp="1587229045586" />
+    <state width="1874" height="357" key="GridCell.Tab.0.right" timestamp="1587229045589">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="357" key="GridCell.Tab.0.right/0.0.1920.1080@0.0.1920.1080" timestamp="1587229045589" />
+    <state width="895" height="357" key="GridCell.Tab.1.bottom" timestamp="1587229069095">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="895" height="357" key="GridCell.Tab.1.bottom/0.0.1920.1080@0.0.1920.1080" timestamp="1587229069095" />
+    <state width="895" height="357" key="GridCell.Tab.1.center" timestamp="1587229069093">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="895" height="357" key="GridCell.Tab.1.center/0.0.1920.1080@0.0.1920.1080" timestamp="1587229069093" />
+    <state width="895" height="357" key="GridCell.Tab.1.left" timestamp="1587229069092">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="895" height="357" key="GridCell.Tab.1.left/0.0.1920.1080@0.0.1920.1080" timestamp="1587229069092" />
+    <state width="895" height="357" key="GridCell.Tab.1.right" timestamp="1587229069094">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="895" height="357" key="GridCell.Tab.1.right/0.0.1920.1080@0.0.1920.1080" timestamp="1587229069094" />
+    <state width="1874" height="357" key="GridCell.Tab.2.bottom" timestamp="1587229045307">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="357" key="GridCell.Tab.2.bottom/0.0.1920.1080@0.0.1920.1080" timestamp="1587229045307" />
+    <state width="1874" height="357" key="GridCell.Tab.2.center" timestamp="1587229045307">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="357" key="GridCell.Tab.2.center/0.0.1920.1080@0.0.1920.1080" timestamp="1587229045307" />
+    <state width="1874" height="357" key="GridCell.Tab.2.left" timestamp="1587229045306">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="357" key="GridCell.Tab.2.left/0.0.1920.1080@0.0.1920.1080" timestamp="1587229045306" />
+    <state width="1874" height="357" key="GridCell.Tab.2.right" timestamp="1587229045307">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="357" key="GridCell.Tab.2.right/0.0.1920.1080@0.0.1920.1080" timestamp="1587229045307" />
+    <state x="84" y="-42" width="1024" height="837" key="SettingsEditor" timestamp="1587174279707">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="84" y="-42" width="1024" height="837" key="SettingsEditor/0.0.1920.1080@0.0.1920.1080" timestamp="1587174279707" />
+    <state x="1130" y="302" key="com.intellij.ide.util.TipDialog" timestamp="1587226562698">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="1130" y="302" key="com.intellij.ide.util.TipDialog/0.0.1920.1080@0.0.1920.1080" timestamp="1587226562698" />
+    <state x="1101" y="145" width="662" height="607" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1587186136615">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="1101" y="145" width="662" height="607" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.0.1920.1080@0.0.1920.1080" timestamp="1587186136615" />
+    <state x="623" y="240" width="672" height="678" key="search.everywhere.popup" timestamp="1587163220727">
+      <screen x="0" y="0" width="1920" height="1080" />
+    </state>
+    <state x="623" y="240" width="672" height="678" key="search.everywhere.popup/0.0.1920.1080@0.0.1920.1080" timestamp="1587163220727" />
+  </component>
+</project>

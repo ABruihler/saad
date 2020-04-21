@@ -8,6 +8,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Java class files
+
+*.class
+
 # C extensions
 *.so
 
@@ -132,3 +136,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# idea
+
+.idea
