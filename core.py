@@ -6,6 +6,8 @@ import shlex
 import subprocess
 import threading
 import time
+import psutil
+
 from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
 
@@ -59,20 +61,96 @@ def all_json_in_dir(dir_path):
 
 class Scope:
     def __init__(self, bindings):
+        self.lock=threading.Lock()
+        self.lock.acquire()
+        #print("Init grabbed scope lock")
         self.bindings = {}
-        self.bind_vars(bindings)
-
-    def bind_vars(self, bindings):
         for binding in bindings.keys():
             self.bindings[binding] = bindings[binding]
+        
+        #List of probes in scope. Internal names are indices in this
+        self.probes = []
+        #Mapping from probe names to internal names
+        self.probe_names={}
+        #How many probes are blocking each of those
+        self.blocking_counts = {}
+        #Which probes are blocked by a given probe
+        self.probes_waiting_on = {}
+        self.lock.release()
 
+    def bind_vars(self, bindings):
+        self.lock.acquire()
+        #print("Binding grabbed scope lock")
+        for binding in bindings.keys():
+            self.bindings[binding] = bindings[binding]
+        self.lock.release()
+
+    def add_probe(self, probe, name = None):
+        self.lock.acquire()
+        #print("Adding grabbed scope lock")
+        internal_name=len(self.probes)
+        self.probes.append(probe)
+        if name!=None:
+            if name in self.probe_names:
+                raise ValueError("Duplicate Probe Name")
+            self.probe_names[name] = internal_name
+        self.blocking_counts[internal_name] = 0
+        self.probes_waiting_on[internal_name] = []
+        self.lock.release()
+
+    def register_probe_dependency(self, probe, dependency_name):
+
+        self.lock.acquire()
+        #print("Dependency grabbed scope lock")
+        dependency_name = self.probe_names[dependency_name]
+        if dependency_name not in self.probes_waiting_on:
+            raise ValueError("Probe " + dependency_name + "not found")
+        
+        probe_name=self.probes.index(probe)
+        self.probes_waiting_on[dependency_name].append(probe_name)
+        self.blocking_counts[probe_name]+=1
+        self.lock.release()
+        #print("Released")
+
+    def update_with_result(self, probe_name, result):
+        self.lock.acquire()
+        #print("Updating grabbed scope lock")
+        self.bindings[probe_name] = result
+        name = self.probe_names[probe_name]
+        if name in self.probes_waiting_on:
+            if(len(self.probes_waiting_on[name])!=0):
+                for probe in self.probes_waiting_on[name]:
+                    self.blocking_counts[probe]-=1
+                    if(self.blocking_counts[probe]==0):
+                        thread = threading.Thread(target=self.probes[probe].run, args=())
+                        thread.start()
+        self.lock.release()
+
+    def get(self, lookup):
+        if(lookup in self.bindings):
+            return True, self.bindings[lookup]
+        if(lookup not in self.probe_names):
+            return False, None
+        return True, None
+
+    def get_dependencies(self, string):
+        matches=re.finditer(r'{([a-zA-Z0-9_~]+)}', str(string))
+        dependencies=[]
+        for match in matches:
+            bound, result = self.get(match.group(1))
+            if bound and result==None:
+                dependencies.append(match.group(1))
+        return dependencies
+        
     def __str__(self):
         return str(self.bindings)
 
 
 class Probe:
     def __init__(self, data, scope):
-        global running_probes
+        self.lock=threading.Lock()
+        self.lock.acquire()
+        #print("init grabbed_probe_lock")
         self.module = modules[data['type']]
         self.headers = {}
         for key, value in data.items():
@@ -81,22 +159,50 @@ class Probe:
             else:
                 self.headers[key] = value
         self.scope = scope
+
         self.status = "Waiting"
-        self.pid = None
+        self.process = None
+        self.name=False
+        if 'name' in self.headers:
+            self.name = self.headers['name']
+            self.scope.add_probe(self,self.name)
+        else:
+            self.scope.add_probe(self)
+        self.lock.release()
+
+    def prep_input_dependencies(self):
+        
+        self.lock.acquire()
+        #print("Prep grabbed probe lock")
+        for item in self.inputs.values():
+            dependencies = self.scope.get_dependencies(item)
+            for dependency in dependencies:
+                self.scope.register_probe_dependency(self,dependency)
+        
+        dependencies = self.scope.get_dependencies(self.module.config['command'])
+        for dependency in dependencies:
+            self.scope.register_probe_dependency(self,dependency)
+        self.lock.release()
+        
 
     def run(self):
-        global running_probes
-
+        if not self.evaluate_condition():
+            return
+        self.lock.acquire()
+        self.status = "Preparing"
+        self.scope.lock.acquire()
         populated_config = {k: insert_named_values(v, self.scope.bindings) for k, v in self.inputs.items()}
         quoted_config = {k: shlex.quote(v) for k, v in populated_config.items()}
-
         populated_command = insert_named_values(self.module.config['command'], quoted_config)
         populated_command = insert_named_values(populated_command, self.scope.bindings)
-
+        self.scope.lock.release()
+        self.status = "Running"
         self.script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        self.pid = self.script.pid
-        running_probes[self.pid] = self
+        self.pid=self.script.pid
+        self.process = psutil.Process(self.pid)
+
         timeout = self.inputs.get("timeout", self.module.config.get("timeout", modules.get("defaultTimeout").config))
+
         assert timeout > 0
         try:
             output, error = self.script.communicate(timeout=timeout)
@@ -105,39 +211,55 @@ class Probe:
             # From what I can tell the terminate()/kill() call is called on the opened shell, not on the started commands
             # TODO figure out a way to handle this properly and terminate the actual commands that run
         except subprocess.TimeoutExpired:
+            self.status = "Timed Out"
             terminate_t = time.time()
             logging.warning("Script %s timed out after %ds, attempting to terminate", self.module.name, timeout)
-            self.script.terminate()
             output, error = self.script.communicate()
+            self.kill()
             logging.warning("Script %s timed out, finished terminating (took %ds)", self.module.name,
-                            time.time() - terminate_t)
-            self.log()
+                        time.time() - terminate_t)
+            
 
+        
         output = output.decode('utf-8')
         error = error.decode('utf-8')
-
         # TODO: handle errors and return values better
         if error != '':
             print(error)
-            return False
+            if self.name:
+                self.scope.update_with_result(self.name, False)
         else:
             print(output)
-            return output
+            if self.name:
+                self.scope.update_with_result(self.name, output)
+        self.lock.release()
 
     def log(self):
         return None
 
     def kill(self):
-        return None
+        if(self.process!=None):
+            for proc in self.process.children(recursive=True):
+                proc.kill()
+        self.process.kill()
+        self.status="Terminated"
+        self.log()
+
+        return 
 
     def evaluate_condition(self):
-        try:
-            condition = self.inputs['condition']
-        except KeyError:
+        self.lock.acquire()
+        if 'condition' not in self.inputs:
+            self.lock.release()
             return True
-
+        condition = self.inputs['condition']
+        self.lock.release()
+        self.scope.lock.acquire()
         populated_condition = insert_named_values(condition, self.scope.bindings)
+        self.scope.lock.release()
+
         return eval(populated_condition)
+
 
     def __str__(self):
         return str({'headers': self.headers, 'inputs': self.inputs})
@@ -150,7 +272,7 @@ class Module:
 
     def run_probe(self, probe_inputs, scope):
         p = Probe(probe_inputs, scope)
-        return p.run()
+        p.run()
 
     def __str__(self):
         return str(self.config)
@@ -182,12 +304,24 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
     # Loop over all files
     for configs in all_json_in_dir(path):
         scope = Scope(default_variables)
+        #Initialize Probes
+        probes=[]
         for probe_config in configs:
             probe = Probe(probe_config, scope)
-            if probe.evaluate_condition():
-                result = probe.run()
-                if 'name' in probe.headers:
-                    scope.bind_vars({probe.headers['name']: result})
+            probes.append(probe)
+        #Get the dependencies set
+        for probe in probes:
+            probe.prep_input_dependencies()
+        #Run probes
+        scope.lock.acquire()
+        data=scope.blocking_counts
+        for probe_name in data.keys():
+            if(data[probe_name]==0):
+
+                thread = threading.Thread(target=scope.probes[probe_name].run, args=())
+                thread.start()
+                #scope.probes[probe_name].run()
+        scope.lock.release()
 
 
 def iterate_over_configs_parallel(current_commit_dir, previous_commit_dir):
@@ -212,8 +346,6 @@ def iterate_over_configs_parallel(current_commit_dir, previous_commit_dir):
 
 
 modules = load_modules()
-running_probes = {}
-
 
 if __name__ == "__main__":
     iterate_over_configs(os.path.dirname(os.path.abspath(__file__)), os.path.dirname(os.path.abspath(__file__)))
