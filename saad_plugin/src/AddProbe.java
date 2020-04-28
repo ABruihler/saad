@@ -1,8 +1,10 @@
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.pom.Navigatable;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
@@ -83,19 +85,10 @@ public class AddProbe extends AnAction {
 
         List<SAADModule> moduleList = getModules(moduleMap);
 
-        // for choosing files to probe, not implemented yet just placeholder code
-        //TextFieldWithBrowseButton fileChooser = new TextFieldWithBrowseButton();
-        //fileChooser.addBrowseFolderListener("Title", "Description", currentProject, new FileChooserDescriptor(true, false, false, false, false, false));
+        ModuleSelectDialog moduleSelectDialog = new ModuleSelectDialog(moduleList);
+        moduleSelectDialog.show();
 
-        // irrelevant (copied) code for testing
-        StringBuffer dlgMsg = new StringBuffer(event.getPresentation().getText() + " Selected!");
-        String dlgTitle = event.getPresentation().getDescription();
-        // If an element is selected in the editor, add info about it.
-        Navigatable nav = event.getData(CommonDataKeys.NAVIGATABLE);
-        if (nav != null) {
-            dlgMsg.append(String.format("\nSelected Element: %s", moduleList.get(5).getParameters()));
-        }
-        Messages.showMessageDialog(currentProject, dlgMsg.toString(), dlgTitle, Messages.getInformationIcon());
+        new AddProbeDialog(currentProject, moduleSelectDialog.getSelectedModule()).show();
 
     }
 }

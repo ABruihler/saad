@@ -28,9 +28,10 @@
 
   <actions>
     <!-- Add your actions here -->
-    <action id="ProbeAction" class="AddProbe" text="Add Probe" description="Add probes">
+    <group id="ProbeActionsGroup" class="com.intellij.openapi.actionSystem.DefaultActionGroup" popup="true" text="Configure Probes">
       <add-to-group group-id="ToolsMenu" anchor="first"/>
-    </action>
+      <action id="AddProbe" class="AddProbe" text="Add Probe"/>
+    </group>
   </actions>
 
 </idea-plugin>

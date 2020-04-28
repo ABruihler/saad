@@ -26,7 +26,11 @@ public class SAADModule {
         }
     }
 
+    public String getModuleName() {
+        return this.moduleName;
+    }
+
     public List<String> getParameters() {
-        return parameters;
+        return this.parameters;
     }
 }
