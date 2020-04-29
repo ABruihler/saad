@@ -61,20 +61,20 @@ def all_json_in_dir(dir_path):
 
 class Scope:
     def __init__(self, bindings):
-        self.lock=threading.Lock()
+        self.lock = threading.Lock()
         self.lock.acquire()
         #print("Init grabbed scope lock")
         self.bindings = {}
         for binding in bindings.keys():
             self.bindings[binding] = bindings[binding]
-        
-        #List of probes in scope. Internal names are indices in this
+
+        # List of probes in scope. Internal names are indices in this
         self.probes = []
-        #Mapping from probe names to internal names
-        self.probe_names={}
-        #How many probes are blocking each of those
+        # Mapping from probe names to internal names
+        self.probe_names = {}
+        # How many probes are blocking each of those
         self.blocking_counts = {}
-        #Which probes are blocked by a given probe
+        # Which probes are blocked by a given probe
         self.probes_waiting_on = {}
         self.lock.release()
 
@@ -85,12 +85,12 @@ class Scope:
             self.bindings[binding] = bindings[binding]
         self.lock.release()
 
-    def add_probe(self, probe, name = None):
+    def add_probe(self, probe, name=None):
         self.lock.acquire()
         #print("Adding grabbed scope lock")
-        internal_name=len(self.probes)
+        internal_name = len(self.probes)
         self.probes.append(probe)
-        if name!=None:
+        if name is not None:
             if name in self.probe_names:
                 raise ValueError("Duplicate Probe Name")
             self.probe_names[name] = internal_name
@@ -105,10 +105,10 @@ class Scope:
         dependency_name = self.probe_names[dependency_name]
         if dependency_name not in self.probes_waiting_on:
             raise ValueError("Probe " + dependency_name + "not found")
-        
-        probe_name=self.probes.index(probe)
+
+        probe_name = self.probes.index(probe)
         self.probes_waiting_on[dependency_name].append(probe_name)
-        self.blocking_counts[probe_name]+=1
+        self.blocking_counts[probe_name] += 1
         self.lock.release()
         #print("Released")
 
@@ -118,37 +118,37 @@ class Scope:
         self.bindings[probe_name] = result
         name = self.probe_names[probe_name]
         if name in self.probes_waiting_on:
-            if(len(self.probes_waiting_on[name])!=0):
+            if len(self.probes_waiting_on[name]) != 0:
                 for probe in self.probes_waiting_on[name]:
-                    self.blocking_counts[probe]-=1
-                    if(self.blocking_counts[probe]==0):
+                    self.blocking_counts[probe] -= 1
+                    if self.blocking_counts[probe] == 0:
                         thread = threading.Thread(target=self.probes[probe].run, args=())
                         thread.start()
         self.lock.release()
 
     def get(self, lookup):
-        if(lookup in self.bindings):
+        if lookup in self.bindings:
             return True, self.bindings[lookup]
-        if(lookup not in self.probe_names):
+        if lookup not in self.probe_names:
             return False, None
         return True, None
 
     def get_dependencies(self, string):
-        matches=re.finditer(r'{([a-zA-Z0-9_~]+)}', str(string))
-        dependencies=[]
+        matches = re.finditer(r'{([a-zA-Z0-9_~]+)}', str(string))
+        dependencies = []
         for match in matches:
             bound, result = self.get(match.group(1))
-            if bound and result==None:
+            if bound and result is None:
                 dependencies.append(match.group(1))
         return dependencies
-        
+
     def __str__(self):
         return str(self.bindings)
 
 
 class Probe:
     def __init__(self, data, scope):
-        self.lock=threading.Lock()
+        self.lock = threading.Lock()
         self.lock.acquire()
         #print("init grabbed_probe_lock")
         self.module = modules[data['type']]
@@ -162,28 +162,27 @@ class Probe:
 
         self.status = "Waiting"
         self.process = None
-        self.name=False
+        self.name = False
         if 'name' in self.headers:
             self.name = self.headers['name']
-            self.scope.add_probe(self,self.name)
+            self.scope.add_probe(self, self.name)
         else:
             self.scope.add_probe(self)
         self.lock.release()
 
     def prep_input_dependencies(self):
-        
+
         self.lock.acquire()
         #print("Prep grabbed probe lock")
         for item in self.inputs.values():
             dependencies = self.scope.get_dependencies(item)
             for dependency in dependencies:
-                self.scope.register_probe_dependency(self,dependency)
-        
+                self.scope.register_probe_dependency(self, dependency)
+
         dependencies = self.scope.get_dependencies(self.module.config['command'])
         for dependency in dependencies:
-            self.scope.register_probe_dependency(self,dependency)
+            self.scope.register_probe_dependency(self, dependency)
         self.lock.release()
-        
 
     def run(self):
         if not self.evaluate_condition():
@@ -198,7 +197,7 @@ class Probe:
         self.scope.lock.release()
         self.status = "Running"
         self.script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        self.pid=self.script.pid
+        self.pid = self.script.pid
         self.process = psutil.Process(self.pid)
 
         timeout = self.inputs.get("timeout", self.module.config.get("timeout", modules.get("defaultTimeout").config))
@@ -217,10 +216,8 @@ class Probe:
             output, error = self.script.communicate()
             self.kill()
             logging.warning("Script %s timed out, finished terminating (took %ds)", self.module.name,
-                        time.time() - terminate_t)
-            
+                            time.time() - terminate_t)
 
-        
         output = output.decode('utf-8')
         error = error.decode('utf-8')
         # TODO: handle errors and return values better
@@ -238,14 +235,13 @@ class Probe:
         return None
 
     def kill(self):
-        if(self.process!=None):
+        if self.process is not None:
             for proc in self.process.children(recursive=True):
                 proc.kill()
         self.process.kill()
-        self.status="Terminated"
+        self.status = "Terminated"
         self.log()
-
-        return 
+        return
 
     def evaluate_condition(self):
         self.lock.acquire()
@@ -259,7 +255,6 @@ class Probe:
         self.scope.lock.release()
 
         return eval(populated_condition)
-
 
     def __str__(self):
         return str({'headers': self.headers, 'inputs': self.inputs})
@@ -304,20 +299,19 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
     # Loop over all files
     for configs in all_json_in_dir(path):
         scope = Scope(default_variables)
-        #Initialize Probes
-        probes=[]
+        # Initialize Probes
+        probes = []
         for probe_config in configs:
             probe = Probe(probe_config, scope)
             probes.append(probe)
-        #Get the dependencies set
+        # Get the dependencies set
         for probe in probes:
             probe.prep_input_dependencies()
-        #Run probes
+        # Run probes
         scope.lock.acquire()
-        data=scope.blocking_counts
+        data = scope.blocking_counts
         for probe_name in data.keys():
-            if(data[probe_name]==0):
-
+            if data[probe_name] == 0:
                 thread = threading.Thread(target=scope.probes[probe_name].run, args=())
                 thread.start()
                 #scope.probes[probe_name].run()
