@@ -20,11 +20,13 @@ from pathlib import Path
 def insert_named_values(string, values):
     return re.sub(r'{([a-zA-Z0-9_~]+)}', lambda m: swap_named_value(m, values), str(string))
 
+
 def get_named_values(string):
-    output=[]
-    for match in re.finditer(r'{([a-zA-Z0-9_~]+)}',str(string)):
+    output = []
+    for match in re.finditer(r'{([a-zA-Z0-9_~]+)}', str(string)):
         output.append(match.group(1))
     return output
+
 
 def swap_named_value(match, values):
     """
@@ -63,14 +65,17 @@ def all_json_in_dir(dir_path):
         parsed = parse_json_file(str(path))
         yield parsed
 
-probe_list=[]
-probe_list_lock=threading.Lock()
+
+probe_list = []
+probe_list_lock = threading.Lock()
+
 
 def get_all_probes():
     probe_list_lock.acquire()
-    out=probe_list.copy()
+    out = probe_list.copy()
     probe_list_lock.release()
     return out
+
 
 class Scope:
     def __init__(self, bindings):
@@ -112,7 +117,6 @@ class Scope:
         self.lock.release()
 
     def register_probe_dependency(self, probe, dependency_name):
-
         self.lock.acquire()
         #print("Dependency grabbed scope lock")
         dependency_name = self.probe_names[dependency_name]
@@ -187,7 +191,6 @@ class Probe:
         self.lock.release()
 
     def prep_input_dependencies(self):
-
         self.lock.acquire()
         #print("Prep grabbed probe lock")
         for item in self.inputs.values():
@@ -337,28 +340,6 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
                 thread.start()
                 #scope.probes[probe_name].run()
         scope.lock.release()
-
-
-
-def iterate_over_configs_parallel(current_commit_dir, previous_commit_dir):
-    raise NotImplementedError  # TODO fix after refactor
-    logging.info("Running parallel version of iterate_over_configs")
-    path = os.path.join(current_commit_dir, "probe_configs")
-
-    # Default variables that can be accessed in module/monitoring configs
-    # TODO address multiple probes working in same directory at same time?
-    default_variables = {
-        "HEAD": current_commit_dir,
-        "HEAD~1": previous_commit_dir
-    }
-
-    with ThreadPoolExecutor() as executor:
-        for config in all_json_in_dir(path):
-            logging.debug("Submitting a config to the thread pool")
-            executor.submit(handle_config, config, default_variables)
-        logging.info("All configs submitted to thread pool")
-
-    logging.info("All config threads finished")
 
 
 modules = load_modules()
