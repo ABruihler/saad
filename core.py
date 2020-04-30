@@ -58,6 +58,14 @@ def all_json_in_dir(dir_path):
         parsed = parse_json_file(str(path))
         yield parsed
 
+probe_list=[]
+probe_list_lock=threading.Lock()
+
+def get_all_probes():
+    probe_list_lock.acquire()
+    out=probe_list.copy()
+    probe_list_lock.release()
+    return out
 
 class Scope:
     def __init__(self, bindings):
@@ -168,6 +176,9 @@ class Probe:
             self.scope.add_probe(self, self.name)
         else:
             self.scope.add_probe(self)
+        probe_list_lock.acquire()
+        probe_list.append(self)
+        probe_list_lock.release()
         self.lock.release()
 
     def prep_input_dependencies(self):
@@ -229,6 +240,9 @@ class Probe:
             print(output)
             if self.name:
                 self.scope.update_with_result(self.name, output)
+        probe_list_lock.acquire()
+        probe_list.remove(self)
+        probe_list_lock.release()
         self.lock.release()
 
     def log(self):
@@ -295,7 +309,6 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
         "HEAD": current_commit_dir,
         "HEAD~1": previous_commit_dir
     }
-
     # Loop over all files
     for configs in all_json_in_dir(path):
         scope = Scope(default_variables)
@@ -316,6 +329,7 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
                 thread.start()
                 #scope.probes[probe_name].run()
         scope.lock.release()
+
 
 
 def iterate_over_configs_parallel(current_commit_dir, previous_commit_dir):
