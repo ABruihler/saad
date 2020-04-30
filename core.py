@@ -181,8 +181,7 @@ class Probe:
             else:
                 self.headers[key] = value
         self.scope = scope
-
-        self.process = None
+        self.pids = []
         self.name = False
         if 'name' in self.headers:
             self.name = self.headers['name']
@@ -192,7 +191,9 @@ class Probe:
         probe_list_lock.acquire()
         probe_list.append(self)
         probe_list_lock.release()
-        self.headers['status']="Waiting"
+        self.headers['status'] = "Waiting"
+        self.output = None
+        self.error = None
         self.lock.release()
 
     def prep_input_dependencies(self):
@@ -221,9 +222,10 @@ class Probe:
         populated_command = insert_named_values(populated_command, self.scope.bindings)
         self.scope.lock.release()
         self.script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        self.pid = self.script.pid
-        self.process = psutil.Process(self.pid)
-        self.children = self.process.children(recursive=True)
+        self.pids = [self.script.pid]
+        if psutil.pid_exists(self.pid):
+            for child in psutil.Process(self.pid).children(recursive=True):
+                self.pids.append(child.pid())
 
         timeout = self.inputs.get("timeout", self.module.config.get("timeout", modules.get("defaultTimeout").config))
         try:
@@ -250,12 +252,14 @@ class Probe:
         # TODO: handle errors and return values better
         if error != '':
             self.headers['status'] = "Error"
+            self.error = error
             print(error)
             if self.name:
                 self.scope.update_with_result(self.name, False)
         else:
             self.headers['status'] = "Finished"
             print(output)
+            self.output = output
             if self.name:
                 self.scope.update_with_result(self.name, output)
         self.headers['finished'] = datetime.datetime.now()
@@ -268,11 +272,9 @@ class Probe:
         return None
 
     def kill(self):
-        if self.process is not None:
-            self.process.kill()
-        for proc in self.children:
-            if proc is not None:
-                proc.kill()
+        for pid in self.pids:
+            if psutil.pid_exists(pid):
+                psutil.Process(pid).kill()
         self.headers['status'] = "Terminated"
         self.headers['finished'] = datetime.datetime.now()
         self.log()
