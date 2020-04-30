@@ -276,61 +276,61 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
 
     def do_POST(self):
-        request_path = self.path
+        if self.path == "/update" or self.path == "/run":
+            # Git webhook for running SAAD on a repo
+            if self.headers.get('Content-Type') != 'application/json':
+                return self.write_json_problem_details(HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                                                       "{\"title\": \"Invalid Content-Type\","
+                                                       "\"detail\": \"Expected request to have Content-Type application/json (got " + self.headers.get('Content-Type') + ")\"}")
 
-        # Git webhook for running SAAD on a repo
-        if self.headers.get('Content-Type') != 'application/json':
-            return self.write_json_problem_details(HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
-                                                   "{\"title\": \"Invalid Content-Type\","
-                                                   "\"detail\": \"Expected request to have Content-Type application/json (got " + self.headers.get('Content-Type') + ")\"}")
+            content_length = int(self.headers['Content-Length'])
+            body = self.rfile.read(content_length)
 
-        content_length = int(self.headers['Content-Length'])
-        body = self.rfile.read(content_length)
+            try:
+                params = json.loads(body.decode('utf-8'))
+            except ValueError:
+                return self.write_json_problem_details(HTTPStatus.BAD_REQUEST,
+                                                       "{\"title\": \"Invalid JSON data\","
+                                                       "\"detail\": \"Unable to load given JSON data\"}")
 
-        try:
-            params = json.loads(body.decode('utf-8'))
-        except ValueError:
-            return self.write_json_problem_details(HTTPStatus.BAD_REQUEST,
-                                                   "{\"title\": \"Invalid JSON data\","
-                                                   "\"detail\": \"Unable to load given JSON data\"}")
+            try:
+                ref = params['ref']
+                previous_commit = params['before']
+                current_commit = params['after']
+                clone_url = params['repository']['clone_url']
+            except KeyError:
+                return self.write_json_problem_details(HTTPStatus.BAD_REQUEST,
+                                                       "{\"title\": \"Invalid JSON data\","
+                                                       "\"detail\": \"Given JSON data missing expected field(s)\"}")
 
-        try:
-            ref = params['ref']
-            previous_commit = params['before']
-            current_commit = params['after']
-            clone_url = params['repository']['clone_url']
-        except KeyError:
-            return self.write_json_problem_details(HTTPStatus.BAD_REQUEST,
-                                                   "{\"title\": \"Invalid JSON data\","
-                                                   "\"detail\": \"Given JSON data missing expected field(s)\"}")
+            if self.path == "/update":
+                if clone_url == SERVER_REPO_URL:
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header('Content-Type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write("Updating...\n".encode())
+                    # TODO make sure response is sent?
 
-        if request_path == "/update":
-            if clone_url == SERVER_REPO_URL:
-                self.send_response(HTTPStatus.OK)
-                self.send_header('Content-Type', 'text/plain')
-                self.end_headers()
-                self.wfile.write("Updating...\n".encode())
+                    new_args = [sys.argv[0], '--clone_url', clone_url,
+                                '--current_commit', current_commit,
+                                '--previous_commit', previous_commit]
+                    return threading.Thread(target=update_self, args=(httpd, new_args,)).start()
+                else:
+                    return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
+                                                           "{\"title\": \"Invalid repo URL\","
+                                                           "\"detail\": \"Will not update as the provided repo <" + clone_url + "> is not the expected server repo\"}")
+            elif self.path == "/run":
+                if check_repo_url(clone_url):
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header('Content-Type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write("Running...\n".encode())
 
-                new_args = [sys.argv[0], '--clone_url', clone_url,
-                            '--current_commit', current_commit,
-                            '--previous_commit', previous_commit]
-                return threading.Thread(target=update_self, args=(httpd, new_args,)).start()
-            else:
-                return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
-                                                       "{\"title\": \"Invalid repo URL\","
-                                                       "\"detail\": \"Will not update as the provided repo <" + clone_url + "> is not the expected server repo\"}")
-        elif request_path == "/run":
-            if check_repo_url(clone_url):
-                self.send_response(HTTPStatus.OK)
-                self.send_header('Content-Type', 'text/plain')
-                self.end_headers()
-                self.wfile.write("Running...\n".encode())
-
-                return run_on_git(clone_url, current_commit, previous_commit)
-            else:
-                return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
-                                                       "{\"title\": \"Invalid repo URL\","
-                                                       "\"detail\": \"Provided repo <" + clone_url + "> is not tracked.\"}")
+                    return run_on_git(clone_url, current_commit, previous_commit)
+                else:
+                    return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
+                                                           "{\"title\": \"Invalid repo URL\","
+                                                           "\"detail\": \"Provided repo <" + clone_url + "> is not tracked.\"}")
         else:
             self.send_response(HTTPStatus.NOT_FOUND)
             self.end_headers()
