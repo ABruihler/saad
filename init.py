@@ -169,22 +169,31 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 data = {}
                 for name, module in core.modules.items():
                     data[name] = module.config
+                    
                 self.wfile.write(json.dumps(data).encode())
             return
         elif self.path == "/modules":
             if self.handle_auth():
                 data = {}
+                forms=[]
                 for name, module in core.modules.items():
-                    data[name] = module.config
+                    data[name] = [module.config, module.get_inputs()]
+                    form='<form action="/run/module" method="post"> <input type="submit" value="'+name+'">'
+                    for i in data[name][1]:
+                        form+='<label for="'+i+'">'+i+'</label>  <input type="text" id="'+i+'" name="'+i+'" value="">'
+                    form+='</form>'
+                    forms.append(form)
                 datajson = json.dumps(data, indent=4)
-
+                outhtml=""
+                for i in forms:
+                    outhtml+=i
                 self.send_response(HTTPStatus.OK)
                 self.send_header('Content-Type', 'text/html')
                 self.end_headers()
 
                 with open(WEB_ROOT + "/modules.html", 'rb') as file:
                     self.wfile.write(file.read()
-                                     .replace("{{modules}}".encode(), datajson.encode()))
+                                     .replace("{{modules}}".encode(), outhtml.encode()))
             return
         elif self.path[:len("/api/probes/")] == "/api/probes/":
             if self.handle_auth():

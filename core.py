@@ -288,6 +288,9 @@ class Module:
         p = Probe(probe_inputs, scope)
         p.run()
 
+    def get_inputs(self):
+        return get_named_values(self.config)
+
     def __str__(self):
         return str(self.config)
 
