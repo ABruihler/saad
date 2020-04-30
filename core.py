@@ -7,6 +7,7 @@ import subprocess
 import threading
 import time
 import psutil
+import datetime
 
 from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
@@ -170,6 +171,10 @@ class Probe:
         #print("init grabbed_probe_lock")
         self.module = modules[data['type']]
         self.headers = {}
+        self.headers['status']="Preparing"
+        self.headers['created']=datetime.datetime.now()
+        self.headers['started']=None
+        self.headers['finished']=None
         for key, value in data.items():
             if key == 'config':
                 self.inputs = value
@@ -177,7 +182,6 @@ class Probe:
                 self.headers[key] = value
         self.scope = scope
 
-        self.status = "Waiting"
         self.process = None
         self.name = False
         if 'name' in self.headers:
@@ -188,6 +192,7 @@ class Probe:
         probe_list_lock.acquire()
         probe_list.append(self)
         probe_list_lock.release()
+        self.headers['status']="Waiting"
         self.lock.release()
 
     def prep_input_dependencies(self):
@@ -207,33 +212,36 @@ class Probe:
         if not self.evaluate_condition():
             return
         self.lock.acquire()
-        self.status = "Preparing"
+        self.headers['status'] = "Running"
+        self.headers['started'] = datetime.datetime.now()
         self.scope.lock.acquire()
         populated_config = {k: insert_named_values(v, self.scope.bindings) for k, v in self.inputs.items()}
         quoted_config = {k: shlex.quote(v) for k, v in populated_config.items()}
         populated_command = insert_named_values(self.module.config['command'], quoted_config)
         populated_command = insert_named_values(populated_command, self.scope.bindings)
         self.scope.lock.release()
-        self.status = "Running"
         self.script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         self.pid = self.script.pid
         self.process = psutil.Process(self.pid)
+        self.children = self.process.children(recursive=True)
 
         timeout = self.inputs.get("timeout", self.module.config.get("timeout", modules.get("defaultTimeout").config))
-
-        assert timeout > 0
         try:
-            output, error = self.script.communicate(timeout=timeout)
+            if timeout>0:
+                output, error = self.script.communicate(timeout=timeout)
+            else:
+                output,error = self.script.communicate()
             self.log()
             # Note: this doesn't seem to really work as intended, because we have shell=True in the Popen() call
             # From what I can tell the terminate()/kill() call is called on the opened shell, not on the started commands
             # TODO figure out a way to handle this properly and terminate the actual commands that run
         except subprocess.TimeoutExpired:
-            self.status = "Timed Out"
+            self.kill()
+            self.headers['status'] = "Timed Out"
             terminate_t = time.time()
             logging.warning("Script %s timed out after %ds, attempting to terminate", self.module.name, timeout)
             output, error = self.script.communicate()
-            self.kill()
+
             logging.warning("Script %s timed out, finished terminating (took %ds)", self.module.name,
                             time.time() - terminate_t)
 
@@ -241,13 +249,16 @@ class Probe:
         error = error.decode('utf-8')
         # TODO: handle errors and return values better
         if error != '':
+            self.headers['status'] = "Error"
             print(error)
             if self.name:
                 self.scope.update_with_result(self.name, False)
         else:
+            self.headers['status'] = "Finished"
             print(output)
             if self.name:
                 self.scope.update_with_result(self.name, output)
+        self.headers['finished'] = datetime.datetime.now()
         probe_list_lock.acquire()
         probe_list.remove(self)
         probe_list_lock.release()
@@ -258,10 +269,12 @@ class Probe:
 
     def kill(self):
         if self.process is not None:
-            for proc in self.process.children(recursive=True):
+            self.process.kill()
+        for proc in self.children:
+            if proc is not None:
                 proc.kill()
-        self.process.kill()
-        self.status = "Terminated"
+        self.headers['status'] = "Terminated"
+        self.headers['finished'] = datetime.datetime.now()
         self.log()
         return
 
