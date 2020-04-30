@@ -238,6 +238,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                                            "{\"title\": \"Invalid repo URL\","
                                                            "\"detail\": \"Provided repo <" + repo_url + "> is not tracked.\"}")
             return
+        elif self.path == "/api/running":
+            if self.handle_auth():
+                data = core.get_all_probes()
+
+                self.send_response(HTTPStatus.OK)
+                self.send_header('Content-Type', 'text/plain')  # TODO return proper formatted JSON
+                self.end_headers()
+
+                for probe in data:
+                    self.wfile.write((str(probe) + "\n").encode())
+            return
         elif self.path == "/":
             self.send_response(HTTPStatus.OK)
             self.send_header('Content-Type', 'text/html')
