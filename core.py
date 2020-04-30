@@ -288,7 +288,7 @@ class Module:
         self.config = config  # equivalent to modules[name]
 
     def run_probe(self, probe_inputs, scope):
-        p = Probe(probe_inputs, scope)
+        p = Probe({"type":self.name,"config":probe_inputs}, scope)
         p.run()
 
     def get_inputs(self):
