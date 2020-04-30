@@ -331,6 +331,19 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
                                                            "{\"title\": \"Invalid repo URL\","
                                                            "\"detail\": \"Provided repo <" + clone_url + "> is not tracked.\"}")
+        elif self.path == "/run/module":  # TODO API?
+            if self.handle_auth():
+                content_length = int(self.headers['Content-Length'])
+                body = self.rfile.read(content_length)
+
+                data = {}
+                for value in body.decode().split("&"):
+                    data.update({value.split("=", 1)[0]: value.split("=", 1)[1]})
+
+                module_name = data.pop("module_name")
+
+                core.modules[module_name].run_probe(data, core.Scope({}))
+            return
         else:
             self.send_response(HTTPStatus.NOT_FOUND)
             self.end_headers()
