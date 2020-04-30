@@ -20,6 +20,11 @@ from pathlib import Path
 def insert_named_values(string, values):
     return re.sub(r'{([a-zA-Z0-9_~]+)}', lambda m: swap_named_value(m, values), str(string))
 
+def get_named_values(string):
+    output=[]
+    for match in re.finditer(r'{([a-zA-Z0-9_~]+)}',str(string)):
+        output.append(match.group(1))
+    return output
 
 def swap_named_value(match, values):
     """
