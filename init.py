@@ -178,7 +178,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 forms=[]
                 for name, module in core.modules.items():
                     data[name] = [module.config, module.get_inputs()]
-                    form='<form action="/run/module" method="post"> <input type="submit" value="'+name+'">'
+                    form='<form action="/run/module" method="post"> <input type="submit" value="'+name+'"> <input type="hidden" id="'+name+'" name="module_name" value="'+name+'">'
                     for i in data[name][1]:
                         form+='<label for="'+i+'">'+i+'</label>  <input type="text" id="'+i+'" name="'+i+'" value="">'
                     form+='</form>'
