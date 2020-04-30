@@ -288,8 +288,9 @@ class Module:
         self.config = config  # equivalent to modules[name]
 
     def run_probe(self, probe_inputs, scope):
-        p = Probe({"type":self.name,"config":probe_inputs}, scope)
-        p.run()
+        p = Probe({"type": self.name, "config": probe_inputs}, scope)
+        thread = threading.Thread(target=p.run, args=())
+        thread.start()
 
     def get_inputs(self):
         return get_named_values(self.config)
