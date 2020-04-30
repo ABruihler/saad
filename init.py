@@ -187,13 +187,19 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 outhtml=""
                 for i in forms:
                     outhtml+=i
-                self.send_response(HTTPStatus.OK)
-                self.send_header('Content-Type', 'text/html')
-                self.end_headers()
 
-                with open(WEB_ROOT + "/modules.html", 'rb') as file:
-                    self.wfile.write(file.read()
-                                     .replace("{{modules}}".encode(), outhtml.encode()))
+                try:
+                    with open(WEB_ROOT + "/modules.html", 'rb') as file:
+                        self.send_response(HTTPStatus.OK)
+                        self.send_header('Content-Type', 'text/html')
+                        self.end_headers()
+
+                        self.wfile.write(file.read()
+                                         .replace("{{modules}}".encode(), outhtml.encode()))
+                except FileNotFoundError as e:
+                    logging.error("Missing website file", e)
+                    self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
+                    self.end_headers()
             return
         elif self.path[:len("/api/probes/")] == "/api/probes/":
             if self.handle_auth():
@@ -231,16 +237,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         probes = list(core.all_json_in_dir(path))
                     datajson = json.dumps(probes, indent=4)
 
-                    self.send_response(HTTPStatus.OK)
-                    self.send_header('Content-Type', 'text/html')
-                    self.end_headers()
+                    try:
+                        with open(WEB_ROOT + "/probes.html", 'rb') as file:
+                            self.send_response(HTTPStatus.OK)
+                            self.send_header('Content-Type', 'text/html')
+                            self.end_headers()
 
-                    with open(WEB_ROOT + "/probes.html", 'rb') as file:
-                        self.wfile.write(file.read()
-                                         .replace("{{probes}}".encode(), datajson.encode())
-                                         .replace("{{repo_url}}".encode(), repo_url.encode())
-                                         .replace("{{repo_name}}".encode(), repo_name.encode()))
-                        return
+                            self.wfile.write(file.read()
+                                             .replace("{{probes}}".encode(), datajson.encode())
+                                             .replace("{{repo_url}}".encode(), repo_url.encode())
+                                             .replace("{{repo_name}}".encode(), repo_name.encode()))
+                    except FileNotFoundError as e:
+                        logging.error("Missing website file", e)
+                        self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
+                        self.end_headers()
                 else:
                     # TODO return user friendly details
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
@@ -267,21 +277,32 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     datastring += "<li><code>" + str(probe) + "</code></li>\n"
                 datastring += "</ul>"
 
-                self.send_response(HTTPStatus.OK)
-                self.send_header('Content-Type', 'text/html')
-                self.end_headers()
+                try:
+                    with open(WEB_ROOT + "/running.html", 'rb') as file:
+                        self.send_response(HTTPStatus.OK)
+                        self.send_header('Content-Type', 'text/html')
+                        self.end_headers()
 
-                with open(WEB_ROOT + "/running.html", 'rb') as file:
-                    self.wfile.write(file.read()
-                                     .replace("{{running}}".encode(), datastring.encode()))
+                        self.wfile.write(file.read()
+                                         .replace("{{running}}".encode(), datastring.encode()))
+                except FileNotFoundError as e:
+                    logging.error("Missing website file", e)
+                    self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
+                    self.end_headers()
+
             return
         elif self.path == "/":
-            self.send_response(HTTPStatus.OK)
-            self.send_header('Content-Type', 'text/html')
-            self.end_headers()
+            try:
+                with open(WEB_ROOT + "/root.html", 'rb') as file:
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header('Content-Type', 'text/html')
+                    self.end_headers()
 
-            with open(WEB_ROOT + "/root.html", 'rb') as file:
-                self.wfile.write(file.read())
+                    self.wfile.write(file.read())
+            except FileNotFoundError as e:
+                logging.error("Missing website file", e)
+                self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
+                self.end_headers()
             return
         else:
             self.send_response(HTTPStatus.NOT_FOUND)
