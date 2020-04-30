@@ -258,6 +258,23 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 for probe in data:
                     self.wfile.write((str(probe) + "\n").encode())
             return
+        elif self.path == "/running":
+            if self.handle_auth():
+                data = core.get_all_probes()
+
+                datastring = "<ul>\n"
+                for probe in data:
+                    datastring += "<li><code>" + str(probe) + "</code></li>\n"
+                datastring += "</ul>"
+
+                self.send_response(HTTPStatus.OK)
+                self.send_header('Content-Type', 'text/html')
+                self.end_headers()
+
+                with open(WEB_ROOT + "/running.html", 'rb') as file:
+                    self.wfile.write(file.read()
+                                     .replace("{{running}}".encode(), datastring.encode()))
+            return
         elif self.path == "/":
             self.send_response(HTTPStatus.OK)
             self.send_header('Content-Type', 'text/html')
