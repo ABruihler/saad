@@ -35,5 +35,8 @@
   },
   "codeChange": {
     "command": "./scripts/probes/code_change.sh {HEAD}/{file} {HEAD~1}/{file} {target} {targetType}"
+  },
+  "sleepPrint": {
+    "command": "sleep {time}; echo '{message}'"
   }
 }

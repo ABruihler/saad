@@ -2,10 +2,9 @@
   {
     "type": "codeChange",
     "config": {
-       "file": "core.py",
-       "target": "load_modules",
-       "targetType": "function"
+      "file": "core.py",
+      "target": "load_modules",
+      "targetType": "function"
     }
   }
 ]
-

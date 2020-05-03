@@ -1,0 +1,34 @@
+[
+  {
+    "type": "sleepPrint",
+    "config": {
+      "time": 3,
+      "message": "Hi1"
+    }
+  },
+  {
+    "name": "Probe2",
+    "type": "sleepPrint",
+    "config": {
+      "time": 3,
+      "message": "Hi2"
+    }
+  },
+  {
+    "type": "sleepPrint",
+    "config": {
+      "time": 3,
+      "message": "Hi3",
+      "waitFor": "{DefinedAfter}",
+      "AlsoWait": "{Probe2}"
+    }
+  },
+  {
+    "name": "DefinedAfter",
+    "type": "sleepPrint",
+    "config": {
+      "time": 6,
+      "message": "Hi4"
+    }
+  }
+]

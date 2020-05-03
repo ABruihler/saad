@@ -17,9 +17,10 @@ from typing import Final
 
 import core
 
-DEFAULT_PORT = 8080
+DEFAULT_PORT: Final = 8080
 ALLOWED_REPO_URLS = {"https://github.com/skimberk/saad.git", "https://github.com/skimberk/saad_example.git"}
 SERVER_REPO_URL: Final = "https://github.com/skimberk/saad.git"  # Server only updates from one repo
+WEB_ROOT: Final = os.getcwd() + "/website"
 
 parser = argparse.ArgumentParser(description="Run saad")
 parser.add_argument('--port',
@@ -181,14 +182,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.send_header('Content-Type', 'text/html')
                 self.end_headers()
 
-                self.wfile.write("<head><style type=\"text/css\">code { white-space: pre; }</style></head>".encode())
-                self.wfile.write("<body>\n".encode())
-                self.wfile.write("<h1>Modules config</h1>\n".encode())
-                self.wfile.write("<code>\n".encode())
-                self.wfile.write(datajson.encode())
-                self.wfile.write("\n".encode())
-                self.wfile.write("</code>\n".encode())
-                self.wfile.write("</body>\n".encode())
+                with open(WEB_ROOT + "/modules.html", 'rb') as file:
+                    self.wfile.write(file.read()
+                                     .replace("{{modules}}".encode(), datajson.encode()))
             return
         elif self.path[:len("/api/probes/")] == "/api/probes/":
             if self.handle_auth():
@@ -230,16 +226,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.send_header('Content-Type', 'text/html')
                     self.end_headers()
 
-                    self.wfile.write("<head><style type=\"text/css\">code { white-space: pre; }</style></head>".encode())
-                    self.wfile.write("<body>\n".encode())
-                    self.wfile.write("<h1>Probes</h1>\n".encode())
-                    self.wfile.write(("Probes for <a href=\"" + repo_url + "\">" + repo_name + "</a>").encode())
-                    self.wfile.write("<code>\n".encode())
-                    self.wfile.write(datajson.encode())
-                    self.wfile.write("\n".encode())
-                    self.wfile.write("</code>\n".encode())
-                    self.wfile.write("</body>\n".encode())
-                    return
+                    with open(WEB_ROOT + "/probes.html", 'rb') as file:
+                        self.wfile.write(file.read()
+                                         .replace("{{probes}}".encode(), datajson.encode())
+                                         .replace("{{repo_url}}".encode(), repo_url.encode())
+                                         .replace("{{repo_name}}".encode(), repo_name.encode()))
+                        return
                 else:
                     # TODO return user friendly details
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
@@ -248,11 +240,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
         elif self.path == "/":
             self.send_response(HTTPStatus.OK)
-            self.send_header('Content-Type', 'text/plain')
+            self.send_header('Content-Type', 'text/html')
             self.end_headers()
 
-            self.wfile.write("saad.sebastian.io\n".encode())
-            self.wfile.write("See https://github.com/skimberk/saad".encode())
+            with open(WEB_ROOT + "/root.html", 'rb') as file:
+                self.wfile.write(file.read())
             return
         else:
             self.send_response(HTTPStatus.NOT_FOUND)
