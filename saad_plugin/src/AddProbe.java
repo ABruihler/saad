@@ -1,3 +1,8 @@
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
@@ -21,6 +26,21 @@ public class AddProbe extends AnAction {
 
     public String readFile(File file) throws IOException {
         return new String(Files.readAllBytes(file.toPath()));
+    }
+
+    public void generateProbeJSON(String type, Map<String, String> config, String path) {
+        ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+
+        SAADProbe probe = new SAADProbe(type, config);
+        try {
+            mapper.writeValue(new File(path), probe);
+        } catch (JsonGenerationException e) {
+            e.printStackTrace();
+        } catch (JsonMappingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public Map<String, Map<String, String>> jsonToMap(String jsonString) {
@@ -90,5 +110,14 @@ public class AddProbe extends AnAction {
 
         new AddProbeDialog(currentProject, moduleSelectDialog.getSelectedModule()).show();
 
+        // For Testing
+
+        String type = "codeChange";
+        Map<String, String> map = new HashMap<>();
+        map.put("file", "test.py");
+        map.put("target", "load_modules");
+        map.put("targetType", "function");
+
+        generateProbeJSON(type, map, saadDirectory + "/probe_configs/test.json");
     }
 }
