@@ -12,11 +12,14 @@ import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.pom.Navigatable;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.intellij.ui.components.JBTextField;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -108,16 +111,18 @@ public class AddProbe extends AnAction {
         ModuleSelectDialog moduleSelectDialog = new ModuleSelectDialog(moduleList);
         moduleSelectDialog.show();
 
-        new AddProbeDialog(currentProject, moduleSelectDialog.getSelectedModule()).show();
+        AddProbeDialog addProbeDialog = new AddProbeDialog(currentProject, moduleSelectDialog.getSelectedModule());
+        addProbeDialog.show();
 
-        // For Testing
+        Map<String, String> probeConfig = new HashMap<>();
+        for(String key: addProbeDialog.getParameterEntries().keySet()) {
+            probeConfig.put(key, addProbeDialog.getParameterEntries().get(key).getText());
+        }
+        if(addProbeDialog.getSpecifyFile()) {
+            Path absolutePath = Paths.get(addProbeDialog.getTargetFile().getText());
+            probeConfig.put("file", Paths.get(projectDirectory).relativize(absolutePath).toString());
+        }
 
-        String type = "codeChange";
-        Map<String, String> map = new HashMap<>();
-        map.put("file", "test.py");
-        map.put("target", "load_modules");
-        map.put("targetType", "function");
-
-        generateProbeJSON(type, map, saadDirectory + "/probe_configs/test.json");
+        generateProbeJSON(addProbeDialog.getProbeTypeName(), probeConfig, saadDirectory + "/probe_configs/test.json");
     }
 }
