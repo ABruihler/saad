@@ -8,6 +8,7 @@ import threading
 import time
 import psutil
 import datetime
+import sqlite3
 
 from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
@@ -66,17 +67,38 @@ def all_json_in_dir(dir_path):
         parsed = parse_json_file(str(path))
         yield parsed
 
-
-probe_list = []
-probe_list_lock = threading.Lock()
-
-
 def get_all_probes():
     probe_list_lock.acquire()
     out = probe_list.copy()
     probe_list_lock.release()
     return out
 
+def connect_database(path):
+    connection = None
+    if(path==None):
+        return None
+    try:
+        connection = sqlite3.connect(path)
+        #print("Connection to SQLite DB successful")
+    except Error as e:
+        print(f"The error '{e}' occurred")
+    return connection
+
+def init_database(db):
+    cursor=db.cursor()
+    tables_schema={}
+    tables_schema['probes']='CREATE TABLE probes(id INTEGER, type TEXT, name TEXT, create_time INTEGER, start_time INTEGER, end_time INTEGER, PRIMARY KEY(id ASC));'
+    tables_schema['probe_inputs']='CREATE TABLE probe_inputs(probe_id INTEGER, name TEXT, value TEXT);'
+    tables_schema['probe_outputs']='CREATE TABLE probe_outputs(probe_id INTEGER, errors TEXT, output TEXT);'
+    for table_name in ['probes','probe_inputs','probe_outputs']:
+        print("Checking table " +table_name)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?;",(table_name,))
+        res=cursor.fetchone()
+        if(res==None):
+            print("Adding table " +table_name)
+            cursor.execute(tables_schema[table_name])
+            db.commit()
+    db.close()
 
 class Scope:
     def __init__(self, bindings):
@@ -171,6 +193,7 @@ class Probe:
         #print("init grabbed_probe_lock")
         self.module = modules[data['type']]
         self.headers = {}
+        self.headers['type']=data['type']
         self.headers['status']="Preparing"
         self.headers['created']=datetime.datetime.now()
         self.headers['started']=None
@@ -223,16 +246,16 @@ class Probe:
         self.scope.lock.release()
         self.script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         self.pids = [self.script.pid]
-        if psutil.pid_exists(self.pid):
-            for child in psutil.Process(self.pid).children(recursive=True):
-                self.pids.append(child.pid())
+        if psutil.pid_exists(self.script.pid):
+            for child in psutil.Process(self.script.pid).children(recursive=True):
+                self.pids.append(child.pid)
 
         timeout = self.inputs.get("timeout", self.module.config.get("timeout", modules.get("defaultTimeout").config))
         try:
             if timeout>0:
-                output, error = self.script.communicate(timeout=timeout)
+                self.output, self.error = self.script.communicate(timeout=timeout)
             else:
-                output,error = self.script.communicate()
+                self.output,self.error = self.script.communicate()
             self.log()
             # Note: this doesn't seem to really work as intended, because we have shell=True in the Popen() call
             # From what I can tell the terminate()/kill() call is called on the opened shell, not on the started commands
@@ -242,26 +265,24 @@ class Probe:
             self.headers['status'] = "Timed Out"
             terminate_t = time.time()
             logging.warning("Script %s timed out after %ds, attempting to terminate", self.module.name, timeout)
-            output, error = self.script.communicate()
+            self.output, self.error = self.script.communicate()
 
             logging.warning("Script %s timed out, finished terminating (took %ds)", self.module.name,
                             time.time() - terminate_t)
 
-        output = output.decode('utf-8')
-        error = error.decode('utf-8')
+        self.output = self.output.decode('utf-8')
+        self.error = self.error.decode('utf-8')
         # TODO: handle errors and return values better
-        if error != '':
+        if self.error != '' and self.error != None:
             self.headers['status'] = "Error"
-            self.error = error
-            print(error)
+            print(self.error)
             if self.name:
                 self.scope.update_with_result(self.name, False)
         else:
             self.headers['status'] = "Finished"
-            print(output)
-            self.output = output
+            print(self.output)
             if self.name:
-                self.scope.update_with_result(self.name, output)
+                self.scope.update_with_result(self.name, self.output)
         self.headers['finished'] = datetime.datetime.now()
         probe_list_lock.acquire()
         probe_list.remove(self)
@@ -269,7 +290,30 @@ class Probe:
         self.lock.release()
 
     def log(self):
-        return None
+        global probes_db_path
+        probes_db = connect_database(probe_db_path)
+        if(probes_db==None):
+            return
+        cursor=probes_db.cursor()
+        tempname=''
+        if self.name:
+            tempname=self.name
+        times=[None,None,None]
+        if self.headers['created']!=None:
+            times[0]=int(self.headers['created'].strftime("%s"))
+        if self.headers['started']!=None:
+            times[1]=int(self.headers['started'].strftime("%s"))
+        if self.headers['finished']!=None:
+            times[2]=int(self.headers['finished'].strftime("%s"))
+        cursor.execute('INSERT INTO probes (type, name, create_time, start_time, end_time) VALUES (?, ?, ?, ?, ?);',(self.headers['type'], tempname, times[0],times[1],times[2],))
+        
+        probe_id=cursor.lastrowid
+        for probe_input,input_val in self.inputs.items():
+            cursor.execute('INSERT INTO probe_inputs VALUES (?, ?, ?);',(probe_id,probe_input,input_val,))
+        
+        cursor.execute('INSERT INTO probe_outputs VALUES (?, ?, ?);',(probe_id,self.error,self.output,))
+        probes_db.commit()
+        probes_db.close()
 
     def kill(self):
         for pid in self.pids:
@@ -357,7 +401,11 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
                 #scope.probes[probe_name].run()
         scope.lock.release()
 
-
+probe_list = []
+probe_list_lock = threading.Lock()
+probe_db_path="probeDatabase.sql"
+probes_db = connect_database(probe_db_path)
+init_database(probes_db)
 modules = load_modules()
 
 if __name__ == "__main__":

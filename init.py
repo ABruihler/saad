@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import sqlite3
 from http import HTTPStatus
 from os.path import basename
 from typing import Final
@@ -291,6 +292,44 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.end_headers()
 
             return
+        elif self.path == "/probelogs":
+            if self.handle_auth():
+                db_path=core.probe_db_path
+                db=core.connect_database(db_path)
+                cursor=db.cursor()
+                probe_list_html=""
+                for probe_id in cursor.execute("SELECT id FROM probes"):
+                    probe_list_html+='<li><ul style="display:inline;">'
+                    cursor2=db.cursor()
+                    temp=cursor2.execute("SELECT * FROM probes WHERE id=?",(probe_id[0],))
+                    for item in cursor2.execute("SELECT * FROM probes WHERE id=?",(probe_id[0],)):
+                        for thing in item:
+                            if not isinstance(thing,str):
+                                probe_list_html+="<li style='display:inline;'> "+str(thing)+"</li>"
+                            else:
+                                probe_list_html+="<li style='display:inline;'> "+thing+"</li>"
+                    for item in cursor2.execute("SELECT * FROM probe_inputs WHERE probe_id=?",(probe_id[0],)):
+                        for thing in item[1:]:
+                            if not isinstance(thing,str):
+                                probe_list_html+="<li style='display:inline;'> "+str(thing)+"</li>"
+                            else:
+                                probe_list_html+="<li style='display:inline;'> "+thing+"</li>"
+                    for item in cursor2.execute("SELECT * FROM probe_outputs WHERE probe_id=?",(probe_id[0],)):
+                        for thing in item[1:]:
+                            if not isinstance(thing,str):
+                                probe_list_html+="<li style='display:inline;'> "+str(thing)+"</li>"
+                            else:
+                                probe_list_html+="<li style='display:inline;'> "+thing+"</li>"
+                    probe_list_html+="</ul></li>"
+                db.close()
+                with open(WEB_ROOT + "/probelogs.html", 'rb') as file:
+                            self.send_response(HTTPStatus.OK)
+                            self.send_header('Content-Type', 'text/html')
+                            self.end_headers()
+
+                            self.wfile.write(file.read()
+                                             .replace("{{probes}}".encode(), probe_list_html.encode()))
+
         elif self.path == "/":
             try:
                 with open(WEB_ROOT + "/root.html", 'rb') as file:
