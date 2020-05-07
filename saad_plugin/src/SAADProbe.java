@@ -1,11 +1,12 @@
-import java.util.HashMap;
 import java.util.Map;
 
 public class SAADProbe {
+    private String name;
     private String type;
     private Map<String, String>config;
 
-    public SAADProbe(String type, Map<String, String> config) {
+    public SAADProbe(String name, String type, Map<String, String> config) {
+        this.name = name;
         this.type = type;
         this.config = config;
     }
@@ -18,4 +19,13 @@ public class SAADProbe {
         return config;
     }
 
+    public String getName() { return name; }
+
+    public boolean removeCondition() {
+        if(!config.containsKey("condition")) {
+            return false;
+        }
+        config.remove("condition");
+        return true;
+    }
 }

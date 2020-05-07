@@ -31,12 +31,16 @@ public class AddProbe extends AnAction {
         return new String(Files.readAllBytes(file.toPath()));
     }
 
-    public void generateProbeJSON(String type, Map<String, String> config, String path) {
+    public void generateProbeJSON(List<SAADProbe> probeList, String path) {
         ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
-        SAADProbe probe = new SAADProbe(type, config);
+        for (SAADProbe probe : probeList) {
+            if(probe.getConfig().get("condition").equals("None") || probe.getConfig().get("condition").equals("")) {
+                probe.removeCondition();
+            }
+        }
         try {
-            mapper.writeValue(new File(path), probe);
+            mapper.writeValue(new File(path), probeList);
         } catch (JsonGenerationException e) {
             e.printStackTrace();
         } catch (JsonMappingException e) {
@@ -107,22 +111,46 @@ public class AddProbe extends AnAction {
         }
 
         List<SAADModule> moduleList = getModules(moduleMap);
+        List<String> referenceProbes = new ArrayList<>();
+        List<SAADProbe> probes = new ArrayList<>();
 
-        ModuleSelectDialog moduleSelectDialog = new ModuleSelectDialog(moduleList);
-        moduleSelectDialog.show();
+        while(true) {
 
-        AddProbeDialog addProbeDialog = new AddProbeDialog(currentProject, moduleSelectDialog.getSelectedModule());
-        addProbeDialog.show();
+            ModuleSelectDialog moduleSelectDialog = new ModuleSelectDialog(moduleList);
+            if(!moduleSelectDialog.showAndGet()) {
+                break;
+            }
 
-        Map<String, String> probeConfig = new HashMap<>();
-        for(String key: addProbeDialog.getParameterEntries().keySet()) {
-            probeConfig.put(key, addProbeDialog.getParameterEntries().get(key).getText());
+            AddProbeDialog addProbeDialog = new AddProbeDialog(currentProject, moduleSelectDialog.getSelectedModule(), referenceProbes);
+            addProbeDialog.show();
+
+            if(addProbeDialog.getExitCode() != 0) {
+                break;
+            }
+
+            Map<String, String> probeConfig = new HashMap<>();
+            for (String key : addProbeDialog.getParameterEntries().keySet()) {
+                probeConfig.put(key, addProbeDialog.getParameterEntries().get(key).getText());
+            }
+            if (addProbeDialog.getSpecifyFile()) {
+                Path absolutePath = Paths.get(addProbeDialog.getTargetFile());
+                try {
+                    probeConfig.put("file", Paths.get(projectDirectory).relativize(absolutePath).toString());
+                } catch (IllegalArgumentException e) {
+                    e.printStackTrace();
+                }
+            }
+            probes.add(new SAADProbe(addProbeDialog.getName(), addProbeDialog.getProbeTypeName(), probeConfig));
+
         }
-        if(addProbeDialog.getSpecifyFile()) {
-            Path absolutePath = Paths.get(addProbeDialog.getTargetFile().getText());
-            probeConfig.put("file", Paths.get(projectDirectory).relativize(absolutePath).toString());
+        if(probes.size() > 0) {
+            NameProbeFileDialog nameProbeFileDialog = new NameProbeFileDialog();
+            nameProbeFileDialog.show();
+            String probeFileName = nameProbeFileDialog.getName();
+            if(probeFileName.length() > 5 && probeFileName.substring(probeFileName.length()-5).equals(".json")) {
+                probeFileName = probeFileName.substring(0, probeFileName.length() - 5);
+            }
+            generateProbeJSON(probes, saadDirectory + "/probe_configs/" + probeFileName + ".json");
         }
-
-        generateProbeJSON(addProbeDialog.getProbeTypeName(), probeConfig, saadDirectory + "/probe_configs/test.json");
     }
 }

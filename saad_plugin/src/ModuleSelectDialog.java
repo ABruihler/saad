@@ -30,6 +30,7 @@ public class ModuleSelectDialog extends DialogWrapper {
         }
 
         this.moduleSelectField = new ComboBox(moduleOptions.toArray());
+        label.setLabelFor(this.moduleSelectField);
         dialogPanel.add(this.moduleSelectField, BorderLayout.CENTER);
 
         return dialogPanel;
