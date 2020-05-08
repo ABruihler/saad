@@ -16,6 +16,9 @@ import java.util.ArrayList;
 
 public class AddProbeDialog extends DialogWrapper {
 
+    public static final int ADD_ANOTHER_PROBE_EXIT_CODE = DialogWrapper.CANCEL_EXIT_CODE;
+    public static final int FINISH_EXIT_CODE = DialogWrapper.OK_EXIT_CODE;
+
     private Project currentProject;
     private SAADModule probeType;
     private boolean specifyFile;
@@ -33,6 +36,9 @@ public class AddProbeDialog extends DialogWrapper {
         this.parameterEntries = new HashMap<>();
         this.referenceProbes = referenceProbes;
         this.nameField = new EditorTextField();
+
+        this.setOKButtonText("Finish");
+        this.setCancelButtonText("Add Another Probe");
 
         init();
         setTitle("Add Probes");
@@ -70,7 +76,7 @@ public class AddProbeDialog extends DialogWrapper {
             this.targetFile = new TextFieldWithBrowseButton();
             FileChooserDescriptor descriptor = new FileChooserDescriptor(true, false, false, false, false, false);
             descriptor.setRoots(ProjectRootManager.getInstance(currentProject).getContentRoots());
-            this.targetFile.addBrowseFolderListener("Title", "Description", currentProject, descriptor);
+            this.targetFile.addBrowseFolderListener("Select File", "", currentProject, descriptor);
             label.setLabelFor(this.targetFile);
             dialogPanel.add(this.targetFile);
         }

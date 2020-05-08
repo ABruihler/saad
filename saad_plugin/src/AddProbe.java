@@ -5,6 +5,7 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.intellij.openapi.ui.DialogWrapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -119,10 +120,6 @@ public class AddProbe extends AnAction {
             AddProbeDialog addProbeDialog = new AddProbeDialog(currentProject, moduleSelectDialog.getSelectedModule(), referenceProbes);
             addProbeDialog.show();
 
-            if(addProbeDialog.getExitCode() != 0) {
-                break;
-            }
-
             Map<String, String> probeConfig = new HashMap<>();
             for (String key : addProbeDialog.getParameterEntries().keySet()) {
                 probeConfig.put(key, (String) addProbeDialog.getParameterEntries().get(key).getSelectedItem());
@@ -136,16 +133,27 @@ public class AddProbe extends AnAction {
                 }
             }
             probes.add(new SAADProbe(addProbeDialog.getName(), addProbeDialog.getProbeTypeName(), probeConfig));
-            referenceProbes.add("{" + addProbeDialog.getName() + "}");
 
+            if(addProbeDialog.getExitCode() == AddProbeDialog.FINISH_EXIT_CODE) {
+                break;
+            }
+
+            referenceProbes.add("{" + addProbeDialog.getName() + "}");
         }
+
         if(probes.size() > 0) {
             NameProbeFileDialog nameProbeFileDialog = new NameProbeFileDialog();
             nameProbeFileDialog.show();
+
+            if(nameProbeFileDialog.getExitCode() == DialogWrapper.CANCEL_EXIT_CODE) {
+                return;
+            }
+
             String probeFileName = nameProbeFileDialog.getName();
             if(probeFileName.length() > 5 && probeFileName.substring(probeFileName.length()-5).equals(".json")) {
                 probeFileName = probeFileName.substring(0, probeFileName.length() - 5);
             }
+
             if(generateProbeJSON(probes, saadDirectory + "/probe_configs/" + probeFileName + ".json")) {
                 ProbeConfirmationDialog probeConfirmationDialog = new ProbeConfirmationDialog();
                 probeConfirmationDialog.show();
