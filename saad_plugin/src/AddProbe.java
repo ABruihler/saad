@@ -1,18 +1,10 @@
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.Messages;
-import com.intellij.openapi.ui.TextFieldWithBrowseButton;
-import com.intellij.pom.Navigatable;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.intellij.ui.components.JBTextField;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -31,7 +23,7 @@ public class AddProbe extends AnAction {
         return new String(Files.readAllBytes(file.toPath()));
     }
 
-    public void generateProbeJSON(List<SAADProbe> probeList, String path) {
+    public boolean generateProbeJSON(List<SAADProbe> probeList, String path) {
         ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
         for (SAADProbe probe : probeList) {
@@ -41,6 +33,7 @@ public class AddProbe extends AnAction {
         }
         try {
             mapper.writeValue(new File(path), probeList);
+            return true;
         } catch (JsonGenerationException e) {
             e.printStackTrace();
         } catch (JsonMappingException e) {
@@ -48,6 +41,8 @@ public class AddProbe extends AnAction {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        return false;
     }
 
     public Map<String, Map<String, String>> jsonToMap(String jsonString) {
@@ -130,7 +125,7 @@ public class AddProbe extends AnAction {
 
             Map<String, String> probeConfig = new HashMap<>();
             for (String key : addProbeDialog.getParameterEntries().keySet()) {
-                probeConfig.put(key, addProbeDialog.getParameterEntries().get(key).getText());
+                probeConfig.put(key, (String) addProbeDialog.getParameterEntries().get(key).getSelectedItem());
             }
             if (addProbeDialog.getSpecifyFile()) {
                 Path absolutePath = Paths.get(addProbeDialog.getTargetFile());
@@ -141,6 +136,7 @@ public class AddProbe extends AnAction {
                 }
             }
             probes.add(new SAADProbe(addProbeDialog.getName(), addProbeDialog.getProbeTypeName(), probeConfig));
+            referenceProbes.add("{" + addProbeDialog.getName() + "}");
 
         }
         if(probes.size() > 0) {
@@ -150,7 +146,10 @@ public class AddProbe extends AnAction {
             if(probeFileName.length() > 5 && probeFileName.substring(probeFileName.length()-5).equals(".json")) {
                 probeFileName = probeFileName.substring(0, probeFileName.length() - 5);
             }
-            generateProbeJSON(probes, saadDirectory + "/probe_configs/" + probeFileName + ".json");
+            if(generateProbeJSON(probes, saadDirectory + "/probe_configs/" + probeFileName + ".json")) {
+                ProbeConfirmationDialog probeConfirmationDialog = new ProbeConfirmationDialog();
+                probeConfirmationDialog.show();
+            }
         }
     }
 }

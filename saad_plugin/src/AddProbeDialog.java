@@ -1,6 +1,7 @@
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ProjectRootManager;
+import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.ui.EditorTextField;
@@ -18,7 +19,7 @@ public class AddProbeDialog extends DialogWrapper {
     private Project currentProject;
     private SAADModule probeType;
     private boolean specifyFile;
-    private Map<String, EditorTextField>  parameterEntries;
+    private Map<String, ComboBox>  parameterEntries;
     private TextFieldWithBrowseButton targetFile;
     private List<String> referenceProbes;
     private EditorTextField nameField;
@@ -54,7 +55,10 @@ public class AddProbeDialog extends DialogWrapper {
             } else if(!parameter.toLowerCase().equals("head") && !parameter.toLowerCase().equals("head~1")) {
                 JLabel label = new JLabel(parameter.substring(0,1).toUpperCase() + parameter.substring(1));
                 dialogPanel.add(label);
-                EditorTextField textField = new EditorTextField();
+                ComboBox textField = new ComboBox(referenceProbes.toArray());
+                textField.setEditable(true);
+                textField.addItem("");
+                textField.setSelectedItem("");
                 label.setLabelFor(textField);
                 this.parameterEntries.put(parameter, textField);
                 dialogPanel.add(textField);
@@ -73,8 +77,10 @@ public class AddProbeDialog extends DialogWrapper {
         // add condition
         JLabel conditionLabel = new JLabel("Condition");
         dialogPanel.add(conditionLabel);
-        EditorTextField conditionField = new EditorTextField();
-        conditionField.setText("None");
+        ComboBox conditionField = new ComboBox(referenceProbes.toArray());
+        conditionField.setEditable(true);
+        conditionField.addItem("None");
+        conditionField.setSelectedItem("None");
         this.parameterEntries.put("condition", conditionField);
         dialogPanel.add(conditionField);
 
@@ -85,7 +91,7 @@ public class AddProbeDialog extends DialogWrapper {
         return this.probeType.getModuleName();
     }
 
-    public Map<String, EditorTextField> getParameterEntries() {
+    public Map<String, ComboBox> getParameterEntries() {
         return this.parameterEntries;
     }
 
