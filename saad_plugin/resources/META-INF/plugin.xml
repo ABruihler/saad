@@ -1,6 +1,6 @@
 <idea-plugin>
   <id>com.your.company.unique.plugin.id</id>
-  <name>Plugin display name here</name>
+  <name>SAAD Probe Configuration</name>
   <version>1.0</version>
   <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
 
@@ -31,6 +31,7 @@
     <group id="ProbeActionsGroup" class="com.intellij.openapi.actionSystem.DefaultActionGroup" popup="true" text="Configure Probes">
       <add-to-group group-id="ToolsMenu" anchor="first"/>
       <action id="AddProbe" class="AddProbe" text="Add Probe"/>
+      <action id="EditProbe" class="EditProbe" text = "Edit Probes"/>
     </group>
   </actions>
 

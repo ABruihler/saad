@@ -5,6 +5,10 @@ public class SAADProbe {
     private String type;
     private Map<String, String>config;
 
+    public SAADProbe() {
+        super();
+    }
+
     public SAADProbe(String name, String type, Map<String, String> config) {
         this.name = name;
         this.type = type;

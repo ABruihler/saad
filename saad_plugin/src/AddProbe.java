@@ -1,4 +1,5 @@
 import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.intellij.openapi.actionSystem.AnAction;
@@ -20,11 +21,11 @@ import java.util.Map;
 
 public class AddProbe extends AnAction {
 
-    public String readFile(File file) throws IOException {
+    public static String readFile(File file) throws IOException {
         return new String(Files.readAllBytes(file.toPath()));
     }
 
-    public boolean generateProbeJSON(List<SAADProbe> probeList, String path) {
+    public static boolean generateProbeJSON(List<SAADProbe> probeList, String path) {
         ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
 
         for (SAADProbe probe : probeList) {
@@ -46,7 +47,19 @@ public class AddProbe extends AnAction {
         return false;
     }
 
-    public Map<String, Map<String, String>> jsonToMap(String jsonString) {
+    public static List<SAADProbe> readProbeJSON(String path) {
+        ObjectMapper mapper = new ObjectMapper();
+        File probeFile = new File(path);
+        List<SAADProbe> probeList = null;
+        try {
+            probeList = mapper.readValue(probeFile, new TypeReference<List<SAADProbe>>(){});
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return probeList;
+    }
+
+    public static Map<String, Map<String, String>> jsonToMap(String jsonString) {
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Map<String, String>> map = new HashMap<>();
         try {
@@ -58,7 +71,7 @@ public class AddProbe extends AnAction {
         return map;
     }
 
-    public List<SAADModule> getModules(Map<String, Map<String, String>> jsonMap) {
+    public static List<SAADModule> getModules(Map<String, Map<String, String>> jsonMap) {
         List<SAADModule> moduleList = new ArrayList<SAADModule>();
         for(Map.Entry<String, Map<String, String>> module : jsonMap.entrySet()) {
             String moduleName = module.getKey();
@@ -66,7 +79,6 @@ public class AddProbe extends AnAction {
         }
         return moduleList;
     }
-
 
     @Override
     public void update(AnActionEvent anActionEvent){
@@ -78,7 +90,7 @@ public class AddProbe extends AnAction {
         String projectDirectory = currentProject.getBasePath();
         File saadDirectory = new File(projectDirectory + "/SAAD");
         if(!saadDirectory.exists() || !saadDirectory.isDirectory()) {
-            System.err.println("SAAD directory not found");
+            System.err.println("SAAD directory not found - must have SAAD directory within project repository.");
             return;
         }
         File probeConfigs = new File(saadDirectory + "/probe_configs");
