@@ -32,6 +32,8 @@ public class EditProbe extends AnAction {
             probeFileMap.put(file.getName(), AddProbe.readProbeJSON(file.getPath()));
         }
         // File Select Dialog - select file name
+        FileSelectDialog fileSelectDialog = new FileSelectDialog(probeFileMap);
+        fileSelectDialog.show();
         // Edit Probe Dialog - Allow editing all fields for probes in file
         // Write Probe File (Overwrite)
     }
