@@ -170,24 +170,24 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 data = {}
                 for name, module in core.modules.items():
                     data[name] = module.config
-                    
+
                 self.wfile.write(json.dumps(data).encode())
             return
         elif self.path == "/modules":
             if self.handle_auth():
                 data = {}
-                forms=[]
+                forms = []
                 for name, module in core.modules.items():
                     data[name] = [module.config, module.get_inputs()]
-                    form='<form action="/run/module" method="post"> <input type="submit" value="'+name+'"> <input type="hidden" id="'+name+'" name="module_name" value="'+name+'">'
+                    form = '<form action="/run/module" method="post"> <input type="submit" value="' + name + '"> <input type="hidden" id="' + name + '" name="module_name" value="' + name + '">'
                     for i in data[name][1]:
-                        form+='<label for="'+i+'">'+i+'</label>  <input type="text" id="'+i+'" name="'+i+'" value="">'
-                    form+='</form>'
+                        form += '<label for="' + i + '">' + i + '</label>  <input type="text" id="' + i + '" name="' + i + '" value="">'
+                    form += '</form>'
                     forms.append(form)
                 datajson = json.dumps(data, indent=4)
-                outhtml=""
+                outhtml = ""
                 for i in forms:
-                    outhtml+=i
+                    outhtml += i
 
                 try:
                     with open(WEB_ROOT + "/modules.html", 'rb') as file:
@@ -294,41 +294,41 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
         elif self.path == "/probelogs":
             if self.handle_auth():
-                db_path=core.probe_db_path
-                db=core.connect_database(db_path)
-                cursor=db.cursor()
-                probe_list_html=""
+                db_path = core.probe_db_path
+                db = core.connect_database(db_path)
+                cursor = db.cursor()
+                probe_list_html = ""
                 for probe_id in cursor.execute("SELECT id FROM probes"):
-                    probe_list_html+='<li><ul style="display:inline;">'
-                    cursor2=db.cursor()
-                    temp=cursor2.execute("SELECT * FROM probes WHERE id=?",(probe_id[0],))
-                    for item in cursor2.execute("SELECT * FROM probes WHERE id=?",(probe_id[0],)):
+                    probe_list_html += '<li><ul style="display:inline;">'
+                    cursor2 = db.cursor()
+                    temp = cursor2.execute("SELECT * FROM probes WHERE id=?", (probe_id[0],))
+                    for item in cursor2.execute("SELECT * FROM probes WHERE id=?", (probe_id[0],)):
                         for thing in item:
-                            if not isinstance(thing,str):
-                                probe_list_html+="<li style='display:inline;'> "+str(thing)+"</li>"
+                            if not isinstance(thing, str):
+                                probe_list_html += "<li style='display:inline;'> " + str(thing) + "</li>"
                             else:
-                                probe_list_html+="<li style='display:inline;'> "+thing+"</li>"
-                    for item in cursor2.execute("SELECT * FROM probe_inputs WHERE probe_id=?",(probe_id[0],)):
+                                probe_list_html += "<li style='display:inline;'> " + thing + "</li>"
+                    for item in cursor2.execute("SELECT * FROM probe_inputs WHERE probe_id=?", (probe_id[0],)):
                         for thing in item[1:]:
-                            if not isinstance(thing,str):
-                                probe_list_html+="<li style='display:inline;'> "+str(thing)+"</li>"
+                            if not isinstance(thing, str):
+                                probe_list_html += "<li style='display:inline;'> " + str(thing) + "</li>"
                             else:
-                                probe_list_html+="<li style='display:inline;'> "+thing+"</li>"
-                    for item in cursor2.execute("SELECT * FROM probe_outputs WHERE probe_id=?",(probe_id[0],)):
+                                probe_list_html += "<li style='display:inline;'> " + thing + "</li>"
+                    for item in cursor2.execute("SELECT * FROM probe_outputs WHERE probe_id=?", (probe_id[0],)):
                         for thing in item[1:]:
-                            if not isinstance(thing,str):
-                                probe_list_html+="<li style='display:inline;'> "+str(thing)+"</li>"
+                            if not isinstance(thing, str):
+                                probe_list_html += "<li style='display:inline;'> " + str(thing) + "</li>"
                             else:
-                                probe_list_html+="<li style='display:inline;'> "+thing+"</li>"
-                    probe_list_html+="</ul></li>"
+                                probe_list_html += "<li style='display:inline;'> " + thing + "</li>"
+                    probe_list_html += "</ul></li>"
                 db.close()
                 with open(WEB_ROOT + "/probelogs.html", 'rb') as file:
-                            self.send_response(HTTPStatus.OK)
-                            self.send_header('Content-Type', 'text/html')
-                            self.end_headers()
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header('Content-Type', 'text/html')
+                    self.end_headers()
 
-                            self.wfile.write(file.read()
-                                             .replace("{{probes}}".encode(), probe_list_html.encode()))
+                    self.wfile.write(file.read()
+                                     .replace("{{probes}}".encode(), probe_list_html.encode()))
 
         elif self.path == "/":
             try:
