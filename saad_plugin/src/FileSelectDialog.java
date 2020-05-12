@@ -31,4 +31,8 @@ public class FileSelectDialog extends DialogWrapper {
         dialogPanel.add(this.fileSelectField, BorderLayout.CENTER);
         return dialogPanel;
     }
+
+    public String getSelectedFile() {
+        return this.fileSelectField.getSelectedItem().toString();
+    }
 }

@@ -34,7 +34,12 @@ public class EditProbe extends AnAction {
         // File Select Dialog - select file name
         FileSelectDialog fileSelectDialog = new FileSelectDialog(probeFileMap);
         fileSelectDialog.show();
+        String fileName = fileSelectDialog.getSelectedFile();
+        List<SAADProbe> probesToEdit = AddProbe.readProbeJSON(probeConfigs + "/" + fileName);
+
         // Edit Probe Dialog - Allow editing all fields for probes in file
+        EditProbeDialog editProbeDialog = new EditProbeDialog(currentProject, probesToEdit);
+        editProbeDialog.show();
         // Write Probe File (Overwrite)
     }
 }
