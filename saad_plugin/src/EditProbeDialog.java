@@ -17,16 +17,16 @@ public class EditProbeDialog extends DialogWrapper {
 
     private class ProbeInterface {
         private EditorTextField nameField;
-        private Map<String, ComboBox> parameterEntries;
+        private Map<String, EditorTextField> parameterEntries;
         private TextFieldWithBrowseButton targetFile;
         private boolean specifyFile;
-        private List<String> referenceProbes;
+        private String probeType;
 
-        public ProbeInterface() {
+        public ProbeInterface(String probeType) {
             this.nameField = new EditorTextField();
             this.parameterEntries = new HashMap<>();
             this.specifyFile = false;
-            this.referenceProbes = new ArrayList<>();
+            this.probeType = probeType;
         }
     }
 
@@ -51,7 +51,7 @@ public class EditProbeDialog extends DialogWrapper {
         dialogPanel.setLayout(new GridLayout(0, 2));
 
         for(SAADProbe probe : this.probes) {
-            ProbeInterface probeInterface = new ProbeInterface();
+            ProbeInterface probeInterface = new ProbeInterface(probe.getType());
             this.probeFields.add(probeInterface);
             JLabel nameLabel = new JLabel("Probe Name");
             dialogPanel.add(nameLabel);
@@ -65,11 +65,8 @@ public class EditProbeDialog extends DialogWrapper {
                 } else if (!parameter.toLowerCase().equals("head") && !parameter.toLowerCase().equals("head~1")) {
                     JLabel label = new JLabel(parameter.substring(0, 1).toUpperCase() + parameter.substring(1));
                     dialogPanel.add(label);
-                    ComboBox textField = new ComboBox(probeInterface.referenceProbes.toArray());
-                    textField.setEditable(true);
-                    textField.addItem("");
-                    textField.setSelectedItem("");
-                    textField.setSelectedItem(probe.getConfig().get(parameter));
+                    EditorTextField textField = new EditorTextField();
+                    textField.setText(probe.getConfig().get(parameter));
                     label.setLabelFor(textField);
                     probeInterface.parameterEntries.put(parameter, textField);
                     dialogPanel.add(textField);
@@ -89,14 +86,26 @@ public class EditProbeDialog extends DialogWrapper {
             // add condition
             JLabel conditionLabel = new JLabel("Condition");
             dialogPanel.add(conditionLabel);
-            ComboBox conditionField = new ComboBox(probeInterface.referenceProbes.toArray());
-            conditionField.setEditable(true);
-            conditionField.addItem("None");
-            conditionField.setSelectedItem(probe.getConfig().get("condition"));
+            EditorTextField conditionField = new EditorTextField();
+            conditionField.setText(probe.getConfig().get("condition"));
             probeInterface.parameterEntries.put("condition", conditionField);
             dialogPanel.add(conditionField);
         }
 
         return dialogPanel;
+    }
+
+    public List<SAADProbe> getProbes() {
+        this.probes = new ArrayList<>();
+        for (ProbeInterface probeInterface : probeFields) {
+            String name = probeInterface.nameField.getText();
+            String type = probeInterface.probeType;
+            Map<String, String> config = new HashMap<>();
+            for(String parameter : probeInterface.parameterEntries.keySet()) {
+                config.put(parameter, probeInterface.parameterEntries.get(parameter).getText());
+            }
+            this.probes.add(new SAADProbe(name, type, config));
+        }
+        return this.probes;
     }
 }

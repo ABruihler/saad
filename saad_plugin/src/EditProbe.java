@@ -1,6 +1,7 @@
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.DialogWrapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -41,5 +42,14 @@ public class EditProbe extends AnAction {
         EditProbeDialog editProbeDialog = new EditProbeDialog(currentProject, probesToEdit);
         editProbeDialog.show();
         // Write Probe File (Overwrite)
+        if(editProbeDialog.getExitCode() != DialogWrapper.OK_EXIT_CODE) {
+            return;
+        }
+
+        if(AddProbe.generateProbeJSON(editProbeDialog.getProbes(), saadDirectory + "/probe_configs/" + fileName)) {
+            ProbeConfirmationDialog probeConfirmationDialog = new ProbeConfirmationDialog();
+            probeConfirmationDialog.show();
+        }
+
     }
 }
