@@ -603,7 +603,7 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
 
 probe_list = []
 probe_list_lock = threading.Lock()
-probe_db_path="probeDatabase.sql"
+probe_db_path = os.path.dirname(os.path.abspath(__file__)) + "/probeDatabase.sql"
 probes_db = connect_database(probe_db_path)
 init_database(probes_db)
 modules = load_modules()
