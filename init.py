@@ -12,6 +12,7 @@ import sys
 import tempfile
 import threading
 import sqlite3
+import configparser
 from http import HTTPStatus
 from os.path import basename
 from typing import Final
@@ -31,18 +32,35 @@ parser.add_argument('--port',
 parser.add_argument('--previous_commit', type=str)
 parser.add_argument('--current_commit', type=str)
 parser.add_argument('--clone_url', type=str)
-
+parser.add_argument('--master_config',type=str)
 args = parser.parse_args()
+serverRepo = core.Repo(SERVER_REPO_URL, 'Server',os.path.dirname(os.path.abspath(__file__)))
+
+if (args.master_config is not None) and os.path.isfile(args.master_config):
+    serverRepo.load_config_recursive(args.master_config)
+elif os.path.isfile("SAAD_config.cfg"):
+    logging.info("Invalid master config file, running on default")
+    serverRepo.load_config_recursive("SAAD_config.cfg")
+    #ALLOWED_REPO_URLS.add(
+else:
+    logging.info("Can't find a master config, shutting down")
+    #TODO: Shut down
+    
+
 
 if (args.clone_url is not None) and (args.clone_url not in ALLOWED_REPO_URLS):
     logging.info("Adding command line URL to ALLOWED_URLs: " + args.clone_url)
     ALLOWED_REPO_URLS.add(args.clone_url)
 
 httpd = None
-
-root_path = os.path.dirname(os.path.abspath(__file__))
-os.chdir(root_path)
-
+serverRepo.reload_all_modules()
+if 'Allowed Repos' in serverRepo.config:
+    for repo in serverRepo.config['Allowed Repos']:
+        Repo(serverRepo.config['Allowed Repos'][repo],repo,serverRepo.config['root_dir'],serverRepo)
+for repo in serverRepo.child_repos:
+    repo.load_config_recursive("",None,True)
+for repo in serverRepo.child_repos:
+    repo.reload_all_modules()
 
 def update_self(server, script_args):
     print("RESTARTING")
@@ -52,7 +70,7 @@ def update_self(server, script_args):
     server.server_close()
 
     print("making sure we are in current directory...")
-    os.chdir(root_path)
+    os.chdir(serverRepo.config['root_path'])
     print("current directory:", os.getcwd())
 
     print("pulling new code from git...")
@@ -68,42 +86,22 @@ def update_self(server, script_args):
 def check_repo_url(url) -> bool:
     # Check that a provided URL for a repo is allowed
     # TODO better storing/updating of the list
-    if url in ALLOWED_REPO_URLS:
-        return True
+    if url in serverRepo.config['ALLOWED_REPO_URLS'].values():
+        for key,val in serverRepo.config['ALLOWED_REPO_URLS'].items():
+            if url==val:
+                return key
+        return False
     else:
         logging.info("Invalid repo URL: " + url)
         return False
 
 
 def run_on_git(clone_url, current_commit, previous_commit):
-    if not check_repo_url(clone_url):
+    repo_name = check_repo_url(clone_url)
+    if not repo_name:
         logging.warning("Not running due to invalid repo URL:" + clone_url)
         return False
-    with tempfile.TemporaryDirectory() as previous_dirname:
-        with tempfile.TemporaryDirectory() as current_dirname:
-            print("################")
-            print("Cloning previous commit...\n")
-            os.chdir(previous_dirname)
-            os.system("git clone " + clone_url + " .")
-            os.system("git config --local advice.detachedHead false")
-            os.system("git checkout " + previous_commit)
-            print()
-
-            print("################")
-            print("Cloning current commit...\n")
-            os.chdir(current_dirname)
-            os.system("git clone " + clone_url + " .")
-            os.system("git config --local advice.detachedHead false")
-            os.system("git checkout " + current_commit)
-
-            os.chdir(root_path)
-
-            print("################")
-            print("Running probes...\n")
-            core.iterate_over_configs(current_dirname, previous_dirname)
-
-            print("################")
-            print("Complete!\n")
+    serverRepo.child_repos[repo_name].run_all_probes(current_commit, previous_commit)
 
 
 def get_logs():
@@ -122,6 +120,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def check_auth_header(self) -> bool:
         # Check the authorization header and return whether it is valid
+        #print(self.headers)
         auth_header = self.headers.get('Authorization')
         if auth_header:
             hashed = hashlib.sha256(auth_header.encode('utf-8')).hexdigest()
@@ -177,7 +176,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if self.handle_auth():
                 data = {}
                 forms=[]
-                for name, module in core.modules.items():
+                for name, module in serverRepo.modules.items():
                     data[name] = [module.config, module.get_inputs()]
                     form='<form action="/run/module" method="post"> <input type="submit" value="'+name+'"> <input type="hidden" id="'+name+'" name="module_name" value="'+name+'">'
                     for i in data[name][1]:
@@ -397,13 +396,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                                            "{\"title\": \"Invalid repo URL\","
                                                            "\"detail\": \"Will not update as the provided repo <" + clone_url + "> is not the expected server repo\"}")
             elif self.path == "/run":
-                if check_repo_url(clone_url):
+                repo_name=check_repo_url(clone_url)
+                if repo_name:
                     self.send_response(HTTPStatus.OK)
                     self.send_header('Content-Type', 'text/plain')
                     self.end_headers()
                     self.wfile.write("Running...\n".encode())
 
-                    return run_on_git(clone_url, current_commit, previous_commit)
+                    return serverRepo.child_repos[repo_name].run_all_probes(current_commit, previous_commit)
                 else:
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
                                                            "{\"title\": \"Invalid repo URL\","
@@ -419,7 +419,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
                 module_name = data.pop("module_name")
 
-                core.modules[module_name].run_probe(data, core.Scope({}))
+                serverRepo.modules[module_name].run_probe(data, core.Scope({}))
             return
         else:
             self.send_response(HTTPStatus.NOT_FOUND)

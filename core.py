@@ -9,6 +9,8 @@ import time
 import psutil
 import datetime
 import sqlite3
+import tempfile
+import configparser
 
 from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
@@ -83,6 +85,21 @@ def connect_database(path):
     except Error as e:
         print(f"The error '{e}' occurred")
     return connection
+
+def init_user_database(db):
+    cursor=db.cursor()
+    tables_schema['users']='CREATE TABLE users(id INTEGER, hash INTEGER, PRIMARY KEY(id ASC));'
+    tables_schema['repos']='CREATE TABLE repos(id INTEGER, name TEXT, url TEXT, PRIMARY KEY(id ASC));'
+    tables_schema['users_auth']='CREATE TABLE users_auth(user_id INTEGER, repo_id INTEGER);'
+    for table_name in tables_schema.keys():
+        print("Checking table " +table_name)
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?;",(table_name,))
+        res=cursor.fetchone()
+        if(res==None):
+            print("Adding table " +table_name)
+            cursor.execute(tables_schema[table_name])
+            db.commit()
+    db.close()
 
 def init_database(db):
     cursor=db.cursor()
@@ -185,6 +202,189 @@ class Scope:
     def __str__(self):
         return str(self.bindings)
 
+
+class Repo:
+
+    #Checks that a config value won't be overwritten improperly
+    def __update_config_vals__(self,vals,append=True, overwrite=False):
+        for key in vals:
+            #If my parent hasn't set a value or isn't false, update
+            if (key not in self.inherited_config) or (self.inherited_config[key]!='False') or overwrite:
+                #But check that my value isn't false first
+                
+                if (key in self.config) and self.config[key]!='False':
+                    if append:
+                        if self.config[key][-1]!=";" and vals[key][0]!=";":
+                            self.config[key]+=";"
+                        self.config[key]+=vals[key]
+                        continue
+                    self.config[key]=vals[key]
+                    continue
+                    
+                self.config[key]=vals[key]
+
+    def __init__(self,repo_path,repo_name,root_dir,parent_repo=None):
+        self.repo=repo_path
+        self.name=repo_name
+        self.commits={}
+        self.modules={}
+        self.running_probes=[]
+        self.probe_lock=threading.Lock()
+        self.config={}
+        self.inherited_config={}
+        self.child_repos={}
+        self.parent=parent_repo
+        self.config['root_path']=root_dir
+        if self.parent:
+            self.parent.child_repos[self.name]=self
+            if 'Repo' in self.parent.config:
+                for key in self.parent.config['Repo']:
+                    #Copy inherited default settings over
+                    self.inherited_config[key]=self.parent.config['Repo'][key]
+                    self.inherited_config['Repo'][key]=self.parent.config['Repo'][key]
+            self.parent_config=self.parent.config
+
+        #Load specific config values from parent
+            if self.name in self.parent.config:
+                self.__update_config_vals__(self.parent.config[self.name],True,True)
+
+    def load_config_recursive(self,path,commit=None,start=False):
+        if not start:
+            self.load_config(path,commit)
+            if 'ConfigFiles' in self.config:
+                if self.config['ConfigFiles']:
+                    undone_configs=self.config['ConfigFiles'].split(";")
+                    i=0
+                    while i<len(undone_configs) and undone_configs[i].strip()!=path:
+                        i+=1
+                    if i<len(undone_configs):
+                        self.load_config_recursive(undone_configs[i].strip(),commit)
+        elif 'ConfigFiles' in self.config and self.config['ConfigFiles']:
+            if len(self.config['ConfigFiles'].split(";"))>0:
+                self.load_config_recursive(((self.config['ConfigFiles'].split(";"))[0]).strip(),commit,False)
+
+    def load_config(self,path,commit=None):
+        saad_config={}
+        config_parser = configparser.ConfigParser()
+        if commit!=None:
+            code_dir=self.get_commit(commit)
+            if os.path.isdir(code_dir):
+                os.chdir(code_dir)
+        if os.path.isfile(path):
+            config_parser.read(path)
+        else:
+            print("No config for Repo found at " + path)
+            return
+        for section in config_parser:
+
+            if section=='Local':
+                self.__update_config_vals__(config_parser['Local'],True,False)
+            elif self.parent!=None:
+                continue
+            elif section=='Server':
+                for key in config_parser[section]:
+                    self.config[key]=config_parser[section].get(key,None)
+            elif section=='Allowed Repos':
+                self.config['ALLOWED_REPO_URLS']={name:config_parser['Allowed Repos'].get(name,name) for name in config_parser['Allowed Repos']}
+            else:
+                for key in config_parser[section]:
+                    if section not in self.config:
+                        self.config[section]={}
+                    self.config[section][key]=config_parser[section].get(key,key)
+        
+                
+        os.chdir(self.config['root_path'])
+        
+    def reload_all_modules(self,commit=None):
+        self.modules={}
+        if self.parent:
+            for module in self.parent.modules:
+                self.modules[module]=self.parent.modules[module]
+        if self.config['modulefolders']:
+            for path in self.config['modulefolders'].split(";"):
+                self.load_modules(path.strip(),commit)
+
+    def load_modules(self,path,commit=None):
+        if commit!=None:
+            path = os.path.join(os.path.dirname(os.path.abspath(self.commits[commit])),path)
+        else:
+            path = os.path.join(self.config['root_path'],path)
+        for config in all_json_in_dir(path):
+            for key, value in config.items():
+                if key in self.modules:
+                    # Module of same type was already defined somewhere else
+                    raise ValueError("Duplicate module")
+                self.modules[key] = Module(key, value)
+
+    def get_all_probes(self):
+        self.probe_lock.acquire()
+        out = self.running_probes.copy()
+        self.probe_lock.release()
+        return out
+
+    def get_modules(self):
+        return self.modules
+
+    def get_current(self):
+        self.commits['current']=tempfile.TemporaryDirectory()
+        print("################")
+        print("Cloning commit current...\n")
+        os.chdir(self.commits['current'])
+        os.system("git clone " + self.repo + " .")
+        os.system("git config --local advice.detachedHead false")
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+        
+
+    def get_commit(self,commit_name):
+        if 'current' not in self.commits:
+            self.get_current()
+        else:
+            if not os.path.isdir(self.commits['current']):
+                self.get_current()
+        os.chdir(self.commits[current])
+        commit_name = subprocess.check_output(['git', 'rev-parse', commit_name])
+        if commit_name in self.commits:
+            if os.path.isdir(self.commits[commit_name]):
+                return self.commits[commit_name]
+        self.commits[commit_name]=tempfile.TemporaryDirectory()
+        print("################")
+        print("Cloning commit " + commit_name + "...\n")
+        os.chdir(self.commits[commit_name])
+        os.system("git clone " + self.repo + " .")
+        os.system("git config --local advice.detachedHead false")
+        os.system("git checkout " + commit_name)
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+        return self.commits[commit_name]
+
+    def run_all_probes(self,new_commit,old_commit):
+        path = os.path.join(current_commit_dir, 'probe_configs')
+
+        # Default variables that can be accessed in module/monitoring configs
+        default_variables = {
+            "HEAD": self.get_commit(new_commit),
+            "HEAD~1": self.get_commit(previous_commit)
+        }
+        # Loop over all files
+        for configs in all_json_in_dir(path):
+            scope = Scope(default_variables)
+            # Initialize Probes
+            probes = []
+            for probe_config in configs:
+                probe = Probe(probe_config, scope)
+                probes.append(probe)
+            # Get the dependencies set
+            for probe in probes:
+                probe.prep_input_dependencies()
+            # Run probes
+            scope.lock.acquire()
+            data = scope.blocking_counts
+            for probe_name in data.keys():
+                if data[probe_name] == 0:
+                    thread = threading.Thread(target=scope.probes[probe_name].run, args=())
+                    thread.start()
+                    #scope.probes[probe_name].run()
+            scope.lock.release()
+    
 
 class Probe:
     def __init__(self, data, scope):
