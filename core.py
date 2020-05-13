@@ -370,7 +370,7 @@ class Repo:
             # Initialize Probes
             probes = []
             for probe_config in configs:
-                probe = Probe(probe_config, scope)
+                probe = Probe(probe_config, scope, self)
                 probes.append(probe)
             # Get the dependencies set
             for probe in probes:
@@ -387,7 +387,7 @@ class Repo:
     
 
 class Probe:
-    def __init__(self, data, scope):
+    def __init__(self, data, scope, repo):
         self.lock = threading.Lock()
         self.lock.acquire()
         #print("init grabbed_probe_lock")
@@ -398,6 +398,7 @@ class Probe:
         self.headers['created']=datetime.datetime.now()
         self.headers['started']=None
         self.headers['finished']=None
+        self.repo=repo
         for key, value in data.items():
             if key == 'config':
                 self.inputs = value
@@ -411,9 +412,9 @@ class Probe:
             self.scope.add_probe(self, self.name)
         else:
             self.scope.add_probe(self)
-        probe_list_lock.acquire()
-        probe_list.append(self)
-        probe_list_lock.release()
+        self.repo.probe_lock.acquire()
+        self.repo.running_probes.append(self)
+        self.repo.probe_lock.release()
         self.headers['status'] = "Waiting"
         self.output = None
         self.error = None
@@ -484,9 +485,9 @@ class Probe:
             if self.name:
                 self.scope.update_with_result(self.name, self.output)
         self.headers['finished'] = datetime.datetime.now()
-        probe_list_lock.acquire()
-        probe_list.remove(self)
-        probe_list_lock.release()
+        self.repo.probe_lock.acquire()
+        self.repo.running_probes.remove(self)
+        self.repo.probe_lock.release()
         self.lock.release()
 
     def log(self):
@@ -546,8 +547,8 @@ class Module:
         self.name = name
         self.config = config  # equivalent to modules[name]
 
-    def run_probe(self, probe_inputs, scope):
-        p = Probe({"type": self.name, "config": probe_inputs}, scope)
+    def run_probe(self, probe_inputs, scope, repo):
+        p = Probe({"type": self.name, "config": probe_inputs}, scope, repo)
         thread = threading.Thread(target=p.run, args=())
         thread.start()
 
@@ -586,7 +587,7 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
         # Initialize Probes
         probes = []
         for probe_config in configs:
-            probe = Probe(probe_config, scope)
+            probe = Probe(probe_config, scope, Repo("","",os.path.dirname(os.path.abspath(__file__))))
             probes.append(probe)
         # Get the dependencies set
         for probe in probes:
@@ -601,8 +602,6 @@ def iterate_over_configs(current_commit_dir, previous_commit_dir):
                 #scope.probes[probe_name].run()
         scope.lock.release()
 
-probe_list = []
-probe_list_lock = threading.Lock()
 probe_db_path = os.path.dirname(os.path.abspath(__file__)) + "/probeDatabase.sql"
 probes_db = connect_database(probe_db_path)
 init_database(probes_db)

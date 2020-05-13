@@ -12,6 +12,7 @@ import sys
 import tempfile
 import threading
 import sqlite3
+import urllib
 import configparser
 from http import HTTPStatus
 from os.path import basename
@@ -153,31 +154,42 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(message.encode())
 
     def do_GET(self):
-        if self.path == "/logs":
+        url_path=urllib.parse.urlparse(self.path).path
+        get_args=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).path)
+        print(vars(self))
+        if url_path == "/logs":
             if self.handle_auth():
                 self.send_response(HTTPStatus.OK)
                 self.send_header('Content-Type', 'text/plain')
                 self.end_headers()
                 self.wfile.write(get_logs().encode())
             return
-        elif self.path == "/api/modules":
+        elif url_path == "/api/modules":
             if self.handle_auth():
                 self.send_response(HTTPStatus.OK)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
                 data = {}
-                for name, module in core.modules.items():
+                repo=serverRepo
+                if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
+                    repo=serverRepo.child_repos[get_args['repo'][0]]
+                for name, module in repo.modules.items():
                     data[name] = module.config
 
                 self.wfile.write(json.dumps(data).encode())
             return
-        elif self.path == "/modules":
+        elif url_path == "/modules":
             if self.handle_auth():
+                print(vars(self))
                 data = {}
                 forms=[]
-                for name, module in serverRepo.modules.items():
+                repo=serverRepo
+                if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
+                    repo=serverRepo.child_repos[get_args['repo'][0]]
+                for name, module in repo.modules.items():
                     data[name] = [module.config, module.get_inputs()]
                     form = '<form action="/run/module" method="post"> <input type="submit" value="' + name + '"> <input type="hidden" id="' + name + '" name="module_name" value="' + name + '">'
+                    form+='<input type="hidden" id="' + name + '_repo" name="repo_name" value="' + repo.name + '">'
                     for i in data[name][1]:
                         form += '<label for="' + i + '">' + i + '</label>  <input type="text" id="' + i + '" name="' + i + '" value="">'
                     form += '</form>'
@@ -200,9 +212,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
                     self.end_headers()
             return
-        elif self.path[:len("/api/probes/")] == "/api/probes/":
+        elif url_path[:len("/api/probes/")] == "/api/probes/":
             if self.handle_auth():
-                repo_url = self.path[len("/api/probes/"):]
+                repo_url = url_path[len("/api/probes/"):]
                 if check_repo_url(repo_url):
                     with tempfile.TemporaryDirectory() as dir:
                         os.chdir(dir)
@@ -220,9 +232,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                                            "{\"title\": \"Invalid repo URL\","
                                                            "\"detail\": \"Provided repo <" + repo_url + "> is not tracked.\"}")
             return
-        elif self.path[:len("/probes/")] == "/probes/":
+        elif url_path[:len("/probes/")] == "/probes/":
             if self.handle_auth():
-                repo_url = self.path[len("/probes/"):]
+                repo_url = url_path[len("/probes/"):]
                 repo_name = basename(repo_url)
                 if repo_name[-len(".git"):] == ".git":
                     repo_name = repo_name[:len(".git")]
@@ -256,9 +268,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                                            "{\"title\": \"Invalid repo URL\","
                                                            "\"detail\": \"Provided repo <" + repo_url + "> is not tracked.\"}")
             return
-        elif self.path == "/api/running":
+        elif url_path == "/api/running":
             if self.handle_auth():
-                data = core.get_all_probes()
+                repo=serverRepo
+                if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
+                    repo=serverRepo.child_repos[get_args['repo'][0]]
+                data = repo.get_all_probes()
 
                 self.send_response(HTTPStatus.OK)
                 self.send_header('Content-Type', 'text/plain')  # TODO return proper formatted JSON
@@ -267,9 +282,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 for probe in data:
                     self.wfile.write((str(probe) + "\n").encode())
             return
-        elif self.path == "/running":
+        elif url_path == "/running":
             if self.handle_auth():
-                data = core.get_all_probes()
+                repo=serverRepo
+                if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
+                    repo=serverRepo.child_repos[get_args['repo'][0]]
+                data = repo.get_all_probes()
 
                 datastring = "<ul>\n"
                 for probe in data:
@@ -290,7 +308,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.end_headers()
 
             return
-        elif self.path == "/probelogs":
+        elif url_path == "/probelogs":
             if self.handle_auth():
                 db_path = core.probe_db_path
                 db = core.connect_database(db_path)
@@ -328,7 +346,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.wfile.write(file.read()
                                      .replace("{{probes}}".encode(), probe_list_html.encode()))
 
-        elif self.path == "/":
+        elif url_path == "/":
             try:
                 with open(serverRepo.config['web_root'] + "/root.html", 'rb') as file:
                     self.send_response(HTTPStatus.OK)
@@ -347,7 +365,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
             self.wfile.write("Page not found :\'(\n\n".encode())
-            self.wfile.write(("path: " + self.path).encode())
+            self.wfile.write(("path: " + url_path).encode())
             return
 
     def do_POST(self):
@@ -417,8 +435,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     data.update({value.split("=", 1)[0]: value.split("=", 1)[1]})
 
                 module_name = data.pop("module_name")
-
-                serverRepo.modules[module_name].run_probe(data, core.Scope({}))
+                repo_name = data.pop("repo_name")
+                repo=serverRepo
+                if repo_name in serverRepo.child_repos:
+                    repo=serverRepo.child_repos[repo_name]
+                repo.modules[module_name].run_probe(data, core.Scope({}),repo)
             return
         else:
             self.send_response(HTTPStatus.NOT_FOUND)
