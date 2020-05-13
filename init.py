@@ -11,6 +11,8 @@ import subprocess
 import sys
 import tempfile
 import threading
+import sqlite3
+import configparser
 from http import HTTPStatus
 from os.path import basename
 from typing import Final
@@ -20,7 +22,6 @@ import core
 DEFAULT_PORT: Final = 8080
 ALLOWED_REPO_URLS = {"https://github.com/skimberk/saad.git", "https://github.com/skimberk/saad_example.git"}
 SERVER_REPO_URL: Final = "https://github.com/skimberk/saad.git"  # Server only updates from one repo
-WEB_ROOT: Final = os.getcwd() + "/website"
 
 parser = argparse.ArgumentParser(description="Run saad")
 parser.add_argument('--port',
@@ -30,18 +31,35 @@ parser.add_argument('--port',
 parser.add_argument('--previous_commit', type=str)
 parser.add_argument('--current_commit', type=str)
 parser.add_argument('--clone_url', type=str)
-
+parser.add_argument('--master_config',type=str)
 args = parser.parse_args()
+serverRepo = core.Repo(SERVER_REPO_URL, 'Server',os.path.dirname(os.path.abspath(__file__)))
+
+if (args.master_config is not None) and os.path.isfile(args.master_config):
+    serverRepo.load_config_recursive(args.master_config)
+elif os.path.isfile("SAAD_config.cfg"):
+    logging.info("Invalid master config file, running on default")
+    serverRepo.load_config_recursive("SAAD_config.cfg")
+    #ALLOWED_REPO_URLS.add(
+else:
+    logging.info("Can't find a master config, shutting down")
+    #TODO: Shut down
+    
+
 
 if (args.clone_url is not None) and (args.clone_url not in ALLOWED_REPO_URLS):
     logging.info("Adding command line URL to ALLOWED_URLs: " + args.clone_url)
     ALLOWED_REPO_URLS.add(args.clone_url)
 
 httpd = None
-
-root_path = os.path.dirname(os.path.abspath(__file__))
-os.chdir(root_path)
-
+serverRepo.reload_all_modules()
+if 'Allowed Repos' in serverRepo.config:
+    for repo in serverRepo.config['Allowed Repos']:
+        Repo(serverRepo.config['Allowed Repos'][repo],repo,serverRepo.config['root_dir'],serverRepo)
+for repo in serverRepo.child_repos:
+    repo.load_config_recursive("",None,True)
+for repo in serverRepo.child_repos:
+    repo.reload_all_modules()
 
 def update_self(server, script_args):
     print("RESTARTING")
@@ -51,7 +69,7 @@ def update_self(server, script_args):
     server.server_close()
 
     print("making sure we are in current directory...")
-    os.chdir(root_path)
+    os.chdir(serverRepo.config['root_path'])
     print("current directory:", os.getcwd())
 
     print("pulling new code from git...")
@@ -67,42 +85,22 @@ def update_self(server, script_args):
 def check_repo_url(url) -> bool:
     # Check that a provided URL for a repo is allowed
     # TODO better storing/updating of the list
-    if url in ALLOWED_REPO_URLS:
-        return True
+    if url in serverRepo.config['ALLOWED_REPO_URLS'].values():
+        for key,val in serverRepo.config['ALLOWED_REPO_URLS'].items():
+            if url==val:
+                return key
+        return False
     else:
         logging.info("Invalid repo URL: " + url)
         return False
 
 
 def run_on_git(clone_url, current_commit, previous_commit):
-    if not check_repo_url(clone_url):
+    repo_name = check_repo_url(clone_url)
+    if not repo_name:
         logging.warning("Not running due to invalid repo URL:" + clone_url)
         return False
-    with tempfile.TemporaryDirectory() as previous_dirname:
-        with tempfile.TemporaryDirectory() as current_dirname:
-            print("################")
-            print("Cloning previous commit...\n")
-            os.chdir(previous_dirname)
-            os.system("git clone " + clone_url + " .")
-            os.system("git config --local advice.detachedHead false")
-            os.system("git checkout " + previous_commit)
-            print()
-
-            print("################")
-            print("Cloning current commit...\n")
-            os.chdir(current_dirname)
-            os.system("git clone " + clone_url + " .")
-            os.system("git config --local advice.detachedHead false")
-            os.system("git checkout " + current_commit)
-
-            os.chdir(root_path)
-
-            print("################")
-            print("Running probes...\n")
-            core.iterate_over_configs(current_dirname, previous_dirname)
-
-            print("################")
-            print("Complete!\n")
+    serverRepo.child_repos[repo_name].run_all_probes(current_commit, previous_commit)
 
 
 def get_logs():
@@ -121,6 +119,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def check_auth_header(self) -> bool:
         # Check the authorization header and return whether it is valid
+        #print(self.headers)
         auth_header = self.headers.get('Authorization')
         if auth_header:
             hashed = hashlib.sha256(auth_header.encode('utf-8')).hexdigest()
@@ -169,22 +168,37 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 data = {}
                 for name, module in core.modules.items():
                     data[name] = module.config
+
                 self.wfile.write(json.dumps(data).encode())
             return
         elif self.path == "/modules":
             if self.handle_auth():
                 data = {}
-                for name, module in core.modules.items():
-                    data[name] = module.config
+                forms=[]
+                for name, module in serverRepo.modules.items():
+                    data[name] = [module.config, module.get_inputs()]
+                    form = '<form action="/run/module" method="post"> <input type="submit" value="' + name + '"> <input type="hidden" id="' + name + '" name="module_name" value="' + name + '">'
+                    for i in data[name][1]:
+                        form += '<label for="' + i + '">' + i + '</label>  <input type="text" id="' + i + '" name="' + i + '" value="">'
+                    form += '</form>'
+                    forms.append(form)
                 datajson = json.dumps(data, indent=4)
+                outhtml = ""
+                for i in forms:
+                    outhtml += i
 
-                self.send_response(HTTPStatus.OK)
-                self.send_header('Content-Type', 'text/html')
-                self.end_headers()
+                try:
+                    with open(serverRepo.config['web_root'] + "/modules.html", 'rb') as file:
+                        self.send_response(HTTPStatus.OK)
+                        self.send_header('Content-Type', 'text/html')
+                        self.end_headers()
 
-                with open(WEB_ROOT + "/modules.html", 'rb') as file:
-                    self.wfile.write(file.read()
-                                     .replace("{{modules}}".encode(), datajson.encode()))
+                        self.wfile.write(file.read()
+                                         .replace("{{modules}}".encode(), outhtml.encode()))
+                except FileNotFoundError as e:
+                    logging.error("Missing website file", e)
+                    self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
+                    self.end_headers()
             return
         elif self.path[:len("/api/probes/")] == "/api/probes/":
             if self.handle_auth():
@@ -222,29 +236,110 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         probes = list(core.all_json_in_dir(path))
                     datajson = json.dumps(probes, indent=4)
 
-                    self.send_response(HTTPStatus.OK)
-                    self.send_header('Content-Type', 'text/html')
-                    self.end_headers()
+                    try:
+                        with open(serverRepo.config['web_root'] + "/probes.html", 'rb') as file:
+                            self.send_response(HTTPStatus.OK)
+                            self.send_header('Content-Type', 'text/html')
+                            self.end_headers()
 
-                    with open(WEB_ROOT + "/probes.html", 'rb') as file:
-                        self.wfile.write(file.read()
-                                         .replace("{{probes}}".encode(), datajson.encode())
-                                         .replace("{{repo_url}}".encode(), repo_url.encode())
-                                         .replace("{{repo_name}}".encode(), repo_name.encode()))
-                        return
+                            self.wfile.write(file.read()
+                                             .replace("{{probes}}".encode(), datajson.encode())
+                                             .replace("{{repo_url}}".encode(), repo_url.encode())
+                                             .replace("{{repo_name}}".encode(), repo_name.encode()))
+                    except FileNotFoundError as e:
+                        logging.error("Missing website file", e)
+                        self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
+                        self.end_headers()
                 else:
                     # TODO return user friendly details
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
                                                            "{\"title\": \"Invalid repo URL\","
                                                            "\"detail\": \"Provided repo <" + repo_url + "> is not tracked.\"}")
             return
-        elif self.path == "/":
-            self.send_response(HTTPStatus.OK)
-            self.send_header('Content-Type', 'text/html')
-            self.end_headers()
+        elif self.path == "/api/running":
+            if self.handle_auth():
+                data = core.get_all_probes()
 
-            with open(WEB_ROOT + "/root.html", 'rb') as file:
-                self.wfile.write(file.read())
+                self.send_response(HTTPStatus.OK)
+                self.send_header('Content-Type', 'text/plain')  # TODO return proper formatted JSON
+                self.end_headers()
+
+                for probe in data:
+                    self.wfile.write((str(probe) + "\n").encode())
+            return
+        elif self.path == "/running":
+            if self.handle_auth():
+                data = core.get_all_probes()
+
+                datastring = "<ul>\n"
+                for probe in data:
+                    datastring += "<li><code>" + str(probe) + "</code></li>\n"
+                datastring += "</ul>"
+
+                try:
+                    with open(serverRepo.config['web_root'] + "/running.html", 'rb') as file:
+                        self.send_response(HTTPStatus.OK)
+                        self.send_header('Content-Type', 'text/html')
+                        self.end_headers()
+
+                        self.wfile.write(file.read()
+                                         .replace("{{running}}".encode(), datastring.encode()))
+                except FileNotFoundError as e:
+                    logging.error("Missing website file", e)
+                    self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
+                    self.end_headers()
+
+            return
+        elif self.path == "/probelogs":
+            if self.handle_auth():
+                db_path = core.probe_db_path
+                db = core.connect_database(db_path)
+                cursor = db.cursor()
+                probe_list_html = ""
+                for probe_id in cursor.execute("SELECT id FROM probes"):
+                    probe_list_html += '<li><ul style="display:inline;">'
+                    cursor2 = db.cursor()
+                    temp = cursor2.execute("SELECT * FROM probes WHERE id=?", (probe_id[0],))
+                    for item in cursor2.execute("SELECT * FROM probes WHERE id=?", (probe_id[0],)):
+                        for thing in item:
+                            if not isinstance(thing, str):
+                                probe_list_html += "<li style='display:inline;'> " + str(thing) + "</li>"
+                            else:
+                                probe_list_html += "<li style='display:inline;'> " + thing + "</li>"
+                    for item in cursor2.execute("SELECT * FROM probe_inputs WHERE probe_id=?", (probe_id[0],)):
+                        for thing in item[1:]:
+                            if not isinstance(thing, str):
+                                probe_list_html += "<li style='display:inline;'> " + str(thing) + "</li>"
+                            else:
+                                probe_list_html += "<li style='display:inline;'> " + thing + "</li>"
+                    for item in cursor2.execute("SELECT * FROM probe_outputs WHERE probe_id=?", (probe_id[0],)):
+                        for thing in item[1:]:
+                            if not isinstance(thing, str):
+                                probe_list_html += "<li style='display:inline;'> " + str(thing) + "</li>"
+                            else:
+                                probe_list_html += "<li style='display:inline;'> " + thing + "</li>"
+                    probe_list_html += "</ul></li>"
+                db.close()
+                with open(serverRepo.config['web_root'] + "/probelogs.html", 'rb') as file:
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header('Content-Type', 'text/html')
+                    self.end_headers()
+
+                    self.wfile.write(file.read()
+                                     .replace("{{probes}}".encode(), probe_list_html.encode()))
+
+        elif self.path == "/":
+            try:
+                with open(serverRepo.config['web_root'] + "/root.html", 'rb') as file:
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header('Content-Type', 'text/html')
+                    self.end_headers()
+
+                    self.wfile.write(file.read())
+            except FileNotFoundError as e:
+                logging.error("Missing website file", e)
+                self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
+                self.end_headers()
             return
         else:
             self.send_response(HTTPStatus.NOT_FOUND)
@@ -256,61 +351,75 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
 
     def do_POST(self):
-        request_path = self.path
+        if self.path == "/update" or self.path == "/run":
+            # Git webhook for running SAAD on a repo
+            if self.headers.get('Content-Type') != 'application/json':
+                return self.write_json_problem_details(HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                                                       "{\"title\": \"Invalid Content-Type\","
+                                                       "\"detail\": \"Expected request to have Content-Type application/json (got " + self.headers.get('Content-Type') + ")\"}")
 
-        # Git webhook for running SAAD on a repo
-        if self.headers.get('Content-Type') != 'application/json':
-            return self.write_json_problem_details(HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
-                                                   "{\"title\": \"Invalid Content-Type\","
-                                                   "\"detail\": \"Expected request to have Content-Type application/json (got " + self.headers.get('Content-Type') + ")\"}")
+            content_length = int(self.headers['Content-Length'])
+            body = self.rfile.read(content_length)
 
-        content_length = int(self.headers['Content-Length'])
-        body = self.rfile.read(content_length)
+            try:
+                params = json.loads(body.decode('utf-8'))
+            except ValueError:
+                return self.write_json_problem_details(HTTPStatus.BAD_REQUEST,
+                                                       "{\"title\": \"Invalid JSON data\","
+                                                       "\"detail\": \"Unable to load given JSON data\"}")
 
-        try:
-            params = json.loads(body.decode('utf-8'))
-        except ValueError:
-            return self.write_json_problem_details(HTTPStatus.BAD_REQUEST,
-                                                   "{\"title\": \"Invalid JSON data\","
-                                                   "\"detail\": \"Unable to load given JSON data\"}")
+            try:
+                ref = params['ref']
+                previous_commit = params['before']
+                current_commit = params['after']
+                clone_url = params['repository']['clone_url']
+            except KeyError:
+                return self.write_json_problem_details(HTTPStatus.BAD_REQUEST,
+                                                       "{\"title\": \"Invalid JSON data\","
+                                                       "\"detail\": \"Given JSON data missing expected field(s)\"}")
 
-        try:
-            ref = params['ref']
-            previous_commit = params['before']
-            current_commit = params['after']
-            clone_url = params['repository']['clone_url']
-        except KeyError:
-            return self.write_json_problem_details(HTTPStatus.BAD_REQUEST,
-                                                   "{\"title\": \"Invalid JSON data\","
-                                                   "\"detail\": \"Given JSON data missing expected field(s)\"}")
+            if self.path == "/update":
+                if clone_url == SERVER_REPO_URL:
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header('Content-Type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write("Updating...\n".encode())
+                    # TODO make sure response is sent?
 
-        if request_path == "/update":
-            if clone_url == SERVER_REPO_URL:
-                self.send_response(HTTPStatus.OK)
-                self.send_header('Content-Type', 'text/plain')
-                self.end_headers()
-                self.wfile.write("Updating...\n".encode())
+                    new_args = [sys.argv[0], '--clone_url', clone_url,
+                                '--current_commit', current_commit,
+                                '--previous_commit', previous_commit]
+                    return threading.Thread(target=update_self, args=(httpd, new_args,)).start()
+                else:
+                    return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
+                                                           "{\"title\": \"Invalid repo URL\","
+                                                           "\"detail\": \"Will not update as the provided repo <" + clone_url + "> is not the expected server repo\"}")
+            elif self.path == "/run":
+                repo_name=check_repo_url(clone_url)
+                if repo_name:
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header('Content-Type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write("Running...\n".encode())
 
-                new_args = [sys.argv[0], '--clone_url', clone_url,
-                            '--current_commit', current_commit,
-                            '--previous_commit', previous_commit]
-                return threading.Thread(target=update_self, args=(httpd, new_args,)).start()
-            else:
-                return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
-                                                       "{\"title\": \"Invalid repo URL\","
-                                                       "\"detail\": \"Will not update as the provided repo <" + clone_url + "> is not the expected server repo\"}")
-        elif request_path == "/run":
-            if check_repo_url(clone_url):
-                self.send_response(HTTPStatus.OK)
-                self.send_header('Content-Type', 'text/plain')
-                self.end_headers()
-                self.wfile.write("Running...\n".encode())
+                    return serverRepo.child_repos[repo_name].run_all_probes(current_commit, previous_commit)
+                else:
+                    return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
+                                                           "{\"title\": \"Invalid repo URL\","
+                                                           "\"detail\": \"Provided repo <" + clone_url + "> is not tracked.\"}")
+        elif self.path == "/run/module":  # TODO API?
+            if self.handle_auth():
+                content_length = int(self.headers['Content-Length'])
+                body = self.rfile.read(content_length)
 
-                return run_on_git(clone_url, current_commit, previous_commit)
-            else:
-                return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
-                                                       "{\"title\": \"Invalid repo URL\","
-                                                       "\"detail\": \"Provided repo <" + clone_url + "> is not tracked.\"}")
+                data = {}
+                for value in body.decode().split("&"):
+                    data.update({value.split("=", 1)[0]: value.split("=", 1)[1]})
+
+                module_name = data.pop("module_name")
+
+                serverRepo.modules[module_name].run_probe(data, core.Scope({}))
+            return
         else:
             self.send_response(HTTPStatus.NOT_FOUND)
             self.end_headers()
