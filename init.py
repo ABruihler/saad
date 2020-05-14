@@ -34,6 +34,10 @@ parser.add_argument('--current_commit', type=str)
 parser.add_argument('--clone_url', type=str)
 parser.add_argument('--master_config',type=str)
 args = parser.parse_args()
+
+logging.basicConfig()
+logging.getLogger().setLevel(logging.DEBUG) # Print all logs
+
 serverRepo = core.Repo(SERVER_REPO_URL, 'Server',os.path.dirname(os.path.abspath(__file__)))
 
 if (args.master_config is not None) and os.path.isfile(args.master_config):
