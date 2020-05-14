@@ -48,6 +48,12 @@ Command for connecting to server:
 ssh -i /Users/skimberk1/Downloads/comps-project-aws.pem ec2-user@ec2-52-14-246-137.us-east-2.compute.amazonaws.com
 ```
 
+Print service logs (same as what you get by visiting `/logs`):
+
+```
+journalctl -n 500 --no-pager -u saad_python_service.service
+```
+
 Used this tutorial for setting up a service:
 <https://github.com/torfsen/python-systemd-tutorial>
 
@@ -80,6 +86,8 @@ sudo systemctl restart saad_python_service
 To install Python (from source, since `yum` didn't have 3.8):
 
 ```
+sudo yum install libffi-devel # Necessary to install psutils (fixes _ctypes error)
+sudo yum install sqlite-devel # Necessary to have sqlite in Python
 sudo yum install openssl-devel
 cd /home/ec2-user/Python-3.8.1/
 sudo ./configure --enable-optimizations
