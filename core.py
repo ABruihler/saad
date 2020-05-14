@@ -300,7 +300,7 @@ class Repo:
         if self.parent:
             for module in self.parent.modules:
                 self.modules[module]=self.parent.modules[module]
-        if self.config['modulefolders']:
+        if 'modulefolders' in self.config::
             for path in self.config['modulefolders'].split(";"):
                 self.load_modules(path.strip(),commit)
 

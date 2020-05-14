@@ -1,5 +1,6 @@
 # SAAD specific ignores
 *token.txt
+*.sql
 
 # Default ignores (given by Github for Python projects)
 
