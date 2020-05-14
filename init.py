@@ -38,6 +38,9 @@ args = parser.parse_args()
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG) # Print all logs
 
+# Make sure we're in saad/ directory (important when running as a service)
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 serverRepo = core.Repo(SERVER_REPO_URL, 'Server',os.path.dirname(os.path.abspath(__file__)))
 
 if (args.master_config is not None) and os.path.isfile(args.master_config):
@@ -49,7 +52,6 @@ elif os.path.isfile("SAAD_config.cfg"):
 else:
     logging.info("Can't find a master config, shutting down")
     #TODO: Shut down
-    
 
 
 if (args.clone_url is not None) and (args.clone_url not in ALLOWED_REPO_URLS):
