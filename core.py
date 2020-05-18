@@ -361,6 +361,8 @@ class Repo:
             if not os.path.isdir(self.commits['current'].name):
                 self.get_current()
         os.chdir(self.commits['current'].name)
+        if commit_name=='current':
+            return self.commits['current'].name
         commit_name = subprocess.check_output(['git', 'rev-parse', commit_name]).decode("utf-8")
         if commit_name in self.commits:
             if os.path.isdir(self.commits[commit_name].name):
@@ -380,7 +382,7 @@ class Repo:
             print("No probes specified to run")
             return
         for filepath in split_config_list(self.config['probefolders']):
-            path = os.path.join(current_commit_dir, filepath)
+            path = os.path.join(self.get_commit('current'), filepath)
             if not os.path.isdir(path):
                 print("No probes found at " + path)
                 continue
@@ -389,7 +391,7 @@ class Repo:
             # Default variables that can be accessed in module/monitoring configs
             default_variables = {
                 "HEAD": self.get_commit(new_commit),
-                "HEAD~1": self.get_commit(previous_commit)
+                "HEAD~1": self.get_commit(old_commit)
             }
             # Loop over all files
             for configs in all_json_in_dir(path):
