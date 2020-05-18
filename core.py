@@ -474,6 +474,10 @@ class Probe:
         populated_command = insert_named_values(self.module.config['command'], quoted_config)
         populated_command = insert_named_values(populated_command, self.scope.bindings)
         self.scope.lock.release()
+
+        # Make sure we're executing in the /saad directory
+        os.chdir(self.repo.config['root_path'])
+
         self.script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         self.pids = [self.script.pid]
         if psutil.pid_exists(self.script.pid):
