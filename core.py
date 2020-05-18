@@ -477,8 +477,8 @@ class Probe:
 
         # Make sure we're executing in the saad/ directory
         os.chdir(self.repo.config['root_path'])
-        logging.debug('Current working directory:', os.getcwd())
-        logging.debug('Executing command:', populated_command)
+        logging.debug('Current working directory: {}'.format(os.getcwd()))
+        logging.debug('Executing command: {}'.format(populated_command))
 
         self.script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         self.pids = [self.script.pid]
@@ -507,9 +507,9 @@ class Probe:
                             time.time() - terminate_t)
 
         # Make sure we're back in the saad/ directory
-        logging.debug('Working directory after command executed:', os.getcwd())
+        logging.debug('Working directory after command executed: {}'.format(os.getcwd()))
         os.chdir(self.repo.config['root_path'])
-        logging.debug('Current working directory:', os.getcwd())
+        logging.debug('Current working directory: {}'.format(os.getcwd()))
 
         self.output = self.output.decode('utf-8')
         self.error = self.error.decode('utf-8')
