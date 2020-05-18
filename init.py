@@ -21,7 +21,7 @@ from typing import Final
 import core
 
 DEFAULT_PORT: Final = 8080
-ALLOWED_REPO_URLS = {"https://github.com/skimberk/saad.git", "https://github.com/skimberk/saad_example.git"}
+ALLOWED_REPO_URLS = {"https://github.com/skimberk/saad.git", "https://github.com/skimberk/saad_example.git", "https://github.com/skimberk/saad_fuzzer_example.git"}
 SERVER_REPO_URL: Final = "https://github.com/skimberk/saad.git"  # Server only updates from one repo
 
 parser = argparse.ArgumentParser(description="Run saad")
