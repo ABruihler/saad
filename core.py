@@ -475,10 +475,10 @@ class Probe:
         populated_command = insert_named_values(populated_command, self.scope.bindings)
         self.scope.lock.release()
 
-        # Make sure we're executing in the /saad directory
+        # Make sure we're executing in the saad/ directory
         os.chdir(self.repo.config['root_path'])
-        print('Current working directory:', os.getcwd())
-        print('Executing command:', populated_command)
+        logging.debug('Current working directory:', os.getcwd())
+        logging.debug('Executing command:', populated_command)
 
         self.script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         self.pids = [self.script.pid]
@@ -505,6 +505,11 @@ class Probe:
 
             logging.warning("Script %s timed out, finished terminating (took %ds)", self.module.name,
                             time.time() - terminate_t)
+
+        # Make sure we're back in the saad/ directory
+        logging.debug('Working directory after command executed:', os.getcwd())
+        os.chdir(self.repo.config['root_path'])
+        logging.debug('Current working directory:', os.getcwd())
 
         self.output = self.output.decode('utf-8')
         self.error = self.error.decode('utf-8')
