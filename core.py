@@ -477,6 +477,8 @@ class Probe:
 
         # Make sure we're executing in the /saad directory
         os.chdir(self.repo.config['root_path'])
+        print('Current working directory:', os.getcwd())
+        print('Executing command:', populated_command)
 
         self.script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         self.pids = [self.script.pid]
