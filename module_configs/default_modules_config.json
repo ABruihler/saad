@@ -38,5 +38,8 @@
   },
   "sleepPrint": {
     "command": "sleep {time}; echo '{message}'"
+  },
+  "grammarFuzz": {
+    "command": "python3 scripts/probes/grammar_fuzzer/fuzz.py {HEAD}/{grammarFile} {entryRule} {HEAD}/{executeFile}"
   }
 }
