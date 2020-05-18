@@ -351,7 +351,7 @@ class Repo:
         os.chdir(self.commits['current'].name)
         os.system("git clone " + self.repo + " .")
         os.system("git config --local advice.detachedHead false")
-        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+        os.chdir(self.config['root_path'])
         
 
     def get_commit(self,commit_name):
@@ -374,7 +374,7 @@ class Repo:
         os.system("git clone " + self.repo + " .")
         os.system("git config --local advice.detachedHead false")
         os.system("git checkout " + commit_name)
-        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+        os.chdir(self.config['root_path'])
         return self.commits[commit_name].name
 
     def run_all_probes(self,new_commit,old_commit):
