@@ -50,7 +50,7 @@ if (args.master_config is not None) and os.path.isfile(args.master_config):
 elif os.path.isfile("SAAD_config.cfg"):
     logging.info("Invalid master config file, running on default")
     serverRepo.load_config_recursive("SAAD_config.cfg")
-    #ALLOWED_REPO_URLS.add(
+
 else:
     logging.info("Can't find a master config, shutting down")
     #TODO: Shut down
@@ -62,12 +62,13 @@ if (args.clone_url is not None) and (args.clone_url not in ALLOWED_REPO_URLS):
 
 httpd = None
 serverRepo.reload_all_modules()
-if 'Allowed Repos' in serverRepo.config:
-    for repo in serverRepo.config['Allowed Repos']:
-        Repo(serverRepo.config['Allowed Repos'][repo],repo,serverRepo.config['root_dir'],serverRepo)
-for repo in serverRepo.child_repos:
-    repo.load_config_recursive("",None,True)
-for repo in serverRepo.child_repos:
+print(serverRepo.config)
+if 'ALLOWED_REPO_URLS' in serverRepo.config:
+    for repo in serverRepo.config['ALLOWED_REPO_URLS']:
+        core.Repo(serverRepo.config['ALLOWED_REPO_URLS'][repo],repo,serverRepo.config['root_path'],serverRepo)
+for repo in serverRepo.child_repos.values():
+    repo.load_config_recursive("",'HEAD',True)
+for repo in serverRepo.child_repos.values():
     repo.reload_all_modules()
 
 def update_self(server, script_args):
