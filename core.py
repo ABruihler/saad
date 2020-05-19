@@ -397,7 +397,7 @@ class Repo:
             print("No probes specified to run")
             return
         for filepath in split_config_list(self.config['probefolders']):
-            path = os.path.join(self.get_commit('current'), filepath)
+            path = os.path.join(self.get_commit(new_commit), filepath)
             if not os.path.isdir(path):
                 print("No probes found at " + path)
                 continue
