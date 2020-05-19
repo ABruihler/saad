@@ -164,6 +164,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         get_args = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).path)
         
         print(vars(self))
+        os.chdir(self.repo.config['root_path'])
         logging.debug('Current working directory: {}'.format(os.getcwd()))
 
         if url_path == "/logs":
