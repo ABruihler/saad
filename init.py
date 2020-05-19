@@ -233,6 +233,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         path = os.path.join(dir, "probe_configs")  # TODO more versatile searching?
                         probes = list(core.all_json_in_dir(path))
 
+                    # Return home!!! <3
+                    os.chdir(serverRepo.config['root_path'])
+
                     self.send_response(HTTPStatus.OK)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
@@ -256,6 +259,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         path = os.path.join(dir, "probe_configs")
                                 # TODO more versatile searching?
                         probes = list(core.all_json_in_dir(path))
+
+                    # Return home!!! <3
+                    os.chdir(serverRepo.config['root_path'])
+
                     datajson = json.dumps(probes, indent=4)
 
                     try:
