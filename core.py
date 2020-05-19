@@ -396,6 +396,11 @@ class Repo:
         if 'probefolders' not in self.config:
             print("No probes specified to run")
             return
+
+        logging.debug('New commit: {}'.format(new_commit))
+        logging.debug('Old commit: {}'.format(old_commit))
+        logging.debug('self.commits: {}'.format(self.commits))
+
         for filepath in split_config_list(self.config['probefolders']):
             path = os.path.join(self.get_commit(new_commit), filepath)
             if not os.path.isdir(path):
