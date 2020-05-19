@@ -162,7 +162,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         url_path = urllib.parse.urlparse(self.path).path
         get_args = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).path)
+        
         print(vars(self))
+        logging.debug('Current working directory: {}'.format(os.getcwd()))
+
         if url_path == "/logs":
             if self.handle_auth():
                 self.send_response(HTTPStatus.OK)
