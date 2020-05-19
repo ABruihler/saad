@@ -44,7 +44,7 @@ def swap_named_value(match, values):
     :return: String to use in place of the variable
     """
     if match.group(1) in values:
-        return values.get(match.group(1))
+        return str(values.get(match.group(1)))
     else:
         logging.debug("Leaving variable as-is because it has no matching value: %s", match.group(0))
         return match.group(0)
