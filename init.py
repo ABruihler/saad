@@ -426,7 +426,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.send_header('Content-Type', 'text/plain')
                     self.end_headers()
                     self.wfile.write("Running...\n".encode())
-
+                    serverRepo.child_repos[repo_name].commits.pop('current',None)
                     return serverRepo.child_repos[repo_name].run_all_probes(current_commit, previous_commit)
                 else:
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
