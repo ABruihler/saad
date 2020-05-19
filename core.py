@@ -338,7 +338,17 @@ class Repo:
         return out
 
     def load_probe_json(self):
-        self.config['ConfigFiles'].split(";")
+        if 'probefolders' not in self.config:
+            print("No probes specified to run")
+            return []
+        output=[]
+        for filepath in split_config_list(self.config['probefolders']):
+            path = os.path.join(self.get_commit('current'), filepath)
+            if not os.path.isdir(path):
+                print("No probes found at " + path)
+                continue
+            output.extend(list(all_json_in_dir(path)))
+        return output
 
     def get_modules(self):
         return self.modules
@@ -374,7 +384,7 @@ class Repo:
         os.system("git clone " + self.repo + " .")
         os.system("git config --local advice.detachedHead false")
         os.system("git checkout " + commit_name)
-        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+        os.chdir(self.config['root_path'])
         return self.commits[commit_name].name
 
     def run_all_probes(self,new_commit,old_commit):

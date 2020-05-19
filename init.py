@@ -164,8 +164,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         url_path=urllib.parse.urlparse(self.path).path
-        get_args=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).path)
-        print(vars(self))
+        get_args=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        print(urllib.parse.urlparse(self.path))
         if url_path == "/logs":
             if self.handle_auth():
                 self.send_response(HTTPStatus.OK)
@@ -221,40 +221,35 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
                     self.end_headers()
             return
-        elif url_path[:len("/api/probes/")] == "/api/probes/":
+        elif url_path[:len("/api/probes")] == "/api/probes":
             if self.handle_auth():
-                repo_url = url_path[len("/api/probes/"):]
-                if check_repo_url(repo_url):
-                    with tempfile.TemporaryDirectory() as dir:
-                        os.chdir(dir)
-                        os.system("git clone " + repo_url + " .")
-
-                        path = os.path.join(dir, "probe_configs")  # TODO more versatile searching?
-                        probes = list(core.all_json_in_dir(path))
-
+                repo=False
+                print(get_args)
+                if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
+                    repo=serverRepo.child_repos[get_args['repo'][0]]
+                if repo:
+                    probes = repo.load_probe_json()
                     self.send_response(HTTPStatus.OK)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
                     self.wfile.write(json.dumps(probes).encode())
                 else:
+                    repo=''
+                    if ('repo' in get_args):
+                        repo=get_args['repo'][0]
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
                                                            "{\"title\": \"Invalid repo URL\","
-                                                           "\"detail\": \"Provided repo <" + repo_url + "> is not tracked.\"}")
+                                                           "\"detail\": \"Provided repo <" + repo + "> is not tracked.\"}")
             return
         elif url_path[:len("/probes/")] == "/probes/":
             if self.handle_auth():
-                repo_url = url_path[len("/probes/"):]
-                repo_name = basename(repo_url)
-                if repo_name[-len(".git"):] == ".git":
-                    repo_name = repo_name[:len(".git")]
-
-                if check_repo_url(repo_url):
-                    with tempfile.TemporaryDirectory() as dir:
-                        os.chdir(dir)
-                        os.system("git clone " + repo_url + " .")
-                        path = os.path.join(dir, "probe_configs")
-                                # TODO more versatile searching?
-                        probes = list(core.all_json_in_dir(path))
+            
+                repo=False
+                print(get_args)
+                if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
+                    repo=serverRepo.child_repos[get_args['repo'][0]]
+                if repo:
+                    probes = repo.load_probe_json()
                     datajson = json.dumps(probes, indent=4)
 
                     try:
@@ -272,10 +267,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
                         self.end_headers()
                 else:
-                    # TODO return user friendly details
+                    repo=''
+                    if ('repo' in get_args):
+                        repo=get_args['repo'][0]
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
                                                            "{\"title\": \"Invalid repo URL\","
-                                                           "\"detail\": \"Provided repo <" + repo_url + "> is not tracked.\"}")
+                                                           "\"detail\": \"Provided repo <" + repo + "> is not tracked.\"}")
             return
         elif url_path == "/api/running":
             if self.handle_auth():
