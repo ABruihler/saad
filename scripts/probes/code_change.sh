@@ -33,8 +33,9 @@ old_target_end=$(echo $old_target | cut -d ' ' -f 2 | cut -d ':' -f 1)
 new_target_start=$(echo $new_target | cut -d ':' -f 1)
 new_target_end=$(echo $new_target | cut -d ' ' -f 2 | cut -d ':' -f 1)
 
-sed -n -e "$old_target_start,$old_target_end p" -e "$old_target_end q" $1 > old_code.txt
-sed -n -e "$new_target_start,$new_target_end p" -e "$new_target_end q" $2 > new_code.txt
+
+sed -n -e "$old_target_start,$old_target_end p" $1 > old_code.txt
+sed -n -e "$new_target_start,$new_target_end p" $2 > new_code.txt
 
 cmp --silent old_code.txt new_code.txt && echo 'False' || echo 'True'
 
