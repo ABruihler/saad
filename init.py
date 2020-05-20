@@ -21,7 +21,7 @@ from typing import Final
 import core
 
 DEFAULT_PORT: Final = 8080
-ALLOWED_REPO_URLS = {"https://github.com/skimberk/saad.git", "https://github.com/skimberk/saad_example.git"}
+ALLOWED_REPO_URLS = {"https://github.com/skimberk/saad.git", "https://github.com/skimberk/saad_example.git", "https://github.com/skimberk/saad_fuzzer_example.git"}
 SERVER_REPO_URL: Final = "https://github.com/skimberk/saad.git"  # Server only updates from one repo
 
 parser = argparse.ArgumentParser(description="Run saad")
@@ -32,25 +32,25 @@ parser.add_argument('--port',
 parser.add_argument('--previous_commit', type=str)
 parser.add_argument('--current_commit', type=str)
 parser.add_argument('--clone_url', type=str)
-parser.add_argument('--master_config',type=str)
+parser.add_argument('--master_config', type=str)
 args = parser.parse_args()
 
 logging.basicConfig()
-logging.getLogger().setLevel(logging.DEBUG) # Print all logs
+logging.getLogger().setLevel(logging.DEBUG)  # Print all logs
 
-serverRepo = core.Repo(SERVER_REPO_URL, 'Server',os.path.dirname(os.path.abspath(__file__)))
+serverRepo = core.Repo(SERVER_REPO_URL, 'Server', os.path.dirname(os.path.abspath(__file__)))
+# Make sure we're in saad/ directory (important when running as a service)
+os.chdir(serverRepo.config['root_path'])
 
 if (args.master_config is not None) and os.path.isfile(args.master_config):
     serverRepo.load_config_recursive(args.master_config)
 elif os.path.isfile("SAAD_config.cfg"):
     logging.info("Invalid master config file, running on default")
     serverRepo.load_config_recursive("SAAD_config.cfg")
-    #ALLOWED_REPO_URLS.add(
+
 else:
     logging.info("Can't find a master config, shutting down")
-    #TODO: Shut down
-    
-
+    # TODO: Shut down
 
 if (args.clone_url is not None) and (args.clone_url not in ALLOWED_REPO_URLS):
     logging.info("Adding command line URL to ALLOWED_URLs: " + args.clone_url)
@@ -58,13 +58,15 @@ if (args.clone_url is not None) and (args.clone_url not in ALLOWED_REPO_URLS):
 
 httpd = None
 serverRepo.reload_all_modules()
-if 'Allowed Repos' in serverRepo.config:
-    for repo in serverRepo.config['Allowed Repos']:
-        Repo(serverRepo.config['Allowed Repos'][repo],repo,serverRepo.config['root_dir'],serverRepo)
-for repo in serverRepo.child_repos:
-    repo.load_config_recursive("",None,True)
-for repo in serverRepo.child_repos:
+print(serverRepo.config)
+if 'ALLOWED_REPO_URLS' in serverRepo.config:
+    for repo in serverRepo.config['ALLOWED_REPO_URLS']:
+        core.Repo(serverRepo.config['ALLOWED_REPO_URLS'][repo], repo, serverRepo.config['root_path'], serverRepo)
+for repo in serverRepo.child_repos.values():
+    repo.load_config_recursive("", 'current', True)
+for repo in serverRepo.child_repos.values():
     repo.reload_all_modules()
+
 
 def update_self(server, script_args):
     print("RESTARTING")
@@ -91,8 +93,8 @@ def check_repo_url(url) -> bool:
     # Check that a provided URL for a repo is allowed
     # TODO better storing/updating of the list
     if url in serverRepo.config['ALLOWED_REPO_URLS'].values():
-        for key,val in serverRepo.config['ALLOWED_REPO_URLS'].items():
-            if url==val:
+        for key, val in serverRepo.config['ALLOWED_REPO_URLS'].items():
+            if url == val:
                 return key
         return False
     else:
@@ -159,8 +161,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         url_path=urllib.parse.urlparse(self.path).path
-        get_args=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).path)
-        print(vars(self))
+        get_args=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        #print(urllib.parse.urlparse(self.path))
+        os.chdir(serverRepo.config['root_path'])
+        logging.debug('Current working directory: {}'.format(os.getcwd()))
+
         if url_path == "/logs":
             if self.handle_auth():
                 self.send_response(HTTPStatus.OK)
@@ -174,9 +179,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
                 data = {}
-                repo=serverRepo
+                repo = serverRepo
                 if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
-                    repo=serverRepo.child_repos[get_args['repo'][0]]
+                    repo = serverRepo.child_repos[get_args['repo'][0]]
                 for name, module in repo.modules.items():
                     data[name] = module.config
 
@@ -186,14 +191,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if self.handle_auth():
                 print(vars(self))
                 data = {}
-                forms=[]
-                repo=serverRepo
+                forms = []
+                repo = serverRepo
                 if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
-                    repo=serverRepo.child_repos[get_args['repo'][0]]
+                    repo = serverRepo.child_repos[get_args['repo'][0]]
                 for name, module in repo.modules.items():
                     data[name] = [module.config, module.get_inputs()]
                     form = '<form action="/run/module" method="post"> <input type="submit" value="' + name + '"> <input type="hidden" id="' + name + '" name="module_name" value="' + name + '">'
-                    form+='<input type="hidden" id="' + name + '_repo" name="repo_name" value="' + repo.name + '">'
+                    form += '<input type="hidden" id="' + name + '_repo" name="repo_name" value="' + repo.name + '">'
                     for i in data[name][1]:
                         form += '<label for="' + i + '">' + i + '</label>  <input type="text" id="' + i + '" name="' + i + '" value="">'
                     form += '</form>'
@@ -216,40 +221,36 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
                     self.end_headers()
             return
-        elif url_path[:len("/api/probes/")] == "/api/probes/":
+        elif url_path[:len("/api/probes")] == "/api/probes":
             if self.handle_auth():
-                repo_url = url_path[len("/api/probes/"):]
-                if check_repo_url(repo_url):
-                    with tempfile.TemporaryDirectory() as dir:
-                        os.chdir(dir)
-                        os.system("git clone " + repo_url + " .")
-
-                        path = os.path.join(dir, "probe_configs")  # TODO more versatile searching?
-                        probes = list(core.all_json_in_dir(path))
-
+                repo=False
+                print(get_args)
+                if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
+                    repo=serverRepo.child_repos[get_args['repo'][0]]
+                if repo:
+                    probes = repo.load_probe_json()
+                    os.chdir(serverRepo.config['root_path'])
                     self.send_response(HTTPStatus.OK)
                     self.send_header('Content-Type', 'application/json')
                     self.end_headers()
                     self.wfile.write(json.dumps(probes).encode())
                 else:
+                    repo=''
+                    if ('repo' in get_args):
+                        repo=get_args['repo'][0]
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
                                                            "{\"title\": \"Invalid repo URL\","
-                                                           "\"detail\": \"Provided repo <" + repo_url + "> is not tracked.\"}")
+                                                           "\"detail\": \"Provided repo <" + repo + "> is not tracked.\"}")
             return
-        elif url_path[:len("/probes/")] == "/probes/":
+        elif url_path[:len("/probes")] == "/probes":
             if self.handle_auth():
-                repo_url = url_path[len("/probes/"):]
-                repo_name = basename(repo_url)
-                if repo_name[-len(".git"):] == ".git":
-                    repo_name = repo_name[:len(".git")]
-
-                if check_repo_url(repo_url):
-                    with tempfile.TemporaryDirectory() as dir:
-                        os.chdir(dir)
-                        os.system("git clone " + repo_url + " .")
-                        path = os.path.join(dir, "probe_configs")
-                                # TODO more versatile searching?
-                        probes = list(core.all_json_in_dir(path))
+                repo=False
+                print(get_args)
+                if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
+                    repo=serverRepo.child_repos[get_args['repo'][0]]
+                if repo:
+                    probes = repo.load_probe_json()
+                    os.chdir(serverRepo.config['root_path'])
                     datajson = json.dumps(probes, indent=4)
 
                     try:
@@ -260,23 +261,25 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
                             self.wfile.write(file.read()
                                              .replace("{{probes}}".encode(), datajson.encode())
-                                             .replace("{{repo_url}}".encode(), repo_url.encode())
-                                             .replace("{{repo_name}}".encode(), repo_name.encode()))
+                                             .replace("{{repo_url}}".encode(), repo.repo.encode())
+                                             .replace("{{repo_name}}".encode(), repo.name.encode()))
                     except FileNotFoundError as e:
                         logging.error("Missing website file", e)
                         self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
                         self.end_headers()
                 else:
-                    # TODO return user friendly details
+                    repo=''
+                    if ('repo' in get_args):
+                        repo=get_args['repo'][0]
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
                                                            "{\"title\": \"Invalid repo URL\","
-                                                           "\"detail\": \"Provided repo <" + repo_url + "> is not tracked.\"}")
+                                                           "\"detail\": \"Provided repo <" + repo + "> is not tracked.\"}")
             return
         elif url_path == "/api/running":
             if self.handle_auth():
-                repo=serverRepo
+                repo = serverRepo
                 if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
-                    repo=serverRepo.child_repos[get_args['repo'][0]]
+                    repo = serverRepo.child_repos[get_args['repo'][0]]
                 data = repo.get_all_probes()
 
                 self.send_response(HTTPStatus.OK)
@@ -288,9 +291,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
         elif url_path == "/running":
             if self.handle_auth():
-                repo=serverRepo
+                repo = serverRepo
                 if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
-                    repo=serverRepo.child_repos[get_args['repo'][0]]
+                    repo = serverRepo.child_repos[get_args['repo'][0]]
                 data = repo.get_all_probes()
 
                 datastring = "<ul>\n"
@@ -417,13 +420,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                                            "{\"title\": \"Invalid repo URL\","
                                                            "\"detail\": \"Will not update as the provided repo <" + clone_url + "> is not the expected server repo\"}")
             elif self.path == "/run":
-                repo_name=check_repo_url(clone_url)
+                repo_name = check_repo_url(clone_url)
                 if repo_name:
                     self.send_response(HTTPStatus.OK)
                     self.send_header('Content-Type', 'text/plain')
                     self.end_headers()
                     self.wfile.write("Running...\n".encode())
-
+                    serverRepo.child_repos[repo_name].commits.pop('current',None)
                     return serverRepo.child_repos[repo_name].run_all_probes(current_commit, previous_commit)
                 else:
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
@@ -440,10 +443,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
                 module_name = data.pop("module_name")
                 repo_name = data.pop("repo_name")
-                repo=serverRepo
+                repo = serverRepo
                 if repo_name in serverRepo.child_repos:
-                    repo=serverRepo.child_repos[repo_name]
-                repo.modules[module_name].run_probe(data, core.Scope({}),repo)
+                    repo = serverRepo.child_repos[repo_name]
+                repo.modules[module_name].run_probe(data, core.Scope({}), repo)
             return
         else:
             self.send_response(HTTPStatus.NOT_FOUND)
