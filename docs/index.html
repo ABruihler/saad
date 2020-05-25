@@ -58,7 +58,7 @@
 	<h3>Server Configuration</h3>
 	<p>We have an instance of LosCat running on a <i>micro</i> AWS EC2 instance. Its operating system is Amazon Linux 2, an Amazon variant of Red Hat.</p>
 	<p>LosCat is run as a <code>systemd</code> service so that it automatically restarts if it crashes or if the server reboots. The service is run as a dedicated user with reduced permissions (so that it can only modify the LosCat directory).</p>
-	<p>The web-facing part of LosCat runs on port 8080 (so as to avoid needing to be run as sudo, which is generally required for ports below 1024. We <code>firewalld</code> to then redirect port 80 to 8080.</p>
+	<p>The web-facing part of LosCat runs on port 8080 (so as to avoid needing to be run as sudo, which is generally required for ports below 1024). We use <code>firewalld</code> to then redirect port 80 to 8080.</p>
 	<p>LosCat is designed to be configurable. Settings and file paths for both the server and the monitored repositories can be specified in config files. For security, the server configs take priority, and will override the others.</p>
 
 
