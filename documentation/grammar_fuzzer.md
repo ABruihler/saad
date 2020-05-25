@@ -38,7 +38,7 @@ Here's an example probe using this module (taken from the example repo):
 
 ## Module Output
 
-TODO
+The fuzzer keeps track of all inputs which cause `executeFile` to exit with a non-zero return code. It then logs all these inputs along with the resulting STDOUT and STDERR.
 
 ## Iterations and Max Depth
 
