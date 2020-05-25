@@ -64,7 +64,7 @@ Allows generating random input to feed into test from an ANTLR grammar specifica
 Uses Abstract Syntax Trees to allow monitoring python functions and classes instead of just files. For more details, see the [code finder documenation](documentation/python_code_finder.md)
 
 ## Web Interface
-The LosCat server also provides a web interface, so that you can get information about modules and probes on the server. See the [website walkthrough](documentaion/website.md) for a more complete description
+The LosCat server also provides a web interface, so that you can get information about modules and probes on the server. See the [website walkthrough](documentation/website.md) for a more complete description
 
 ## IDE Plugin
 To make it easier to make probes, LosCat also includes a JetBrains IDE plugin. For more info, see the documentation [here](documentation/ide_plugin.md)
