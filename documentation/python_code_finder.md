@@ -30,7 +30,8 @@ Examples:
 The module outputs the path of the file where the code is located, the start line and column (both line and column are inclusive), and the end line and column (the line is inclusive, the column is exclusive). The output is on three separate lines. First comes the file path, then the start location, then the end location. The code locations are specified as `<line>:<column>`.
 
 Example output:
-```
+```console
+$ python3 scripts/target_finders/python_ast.py lots_of_code.py "class(CrazyClass) > func(critical_method)"
 lots_of_code.py
 6:5
 7:31
