@@ -48,7 +48,7 @@ Repositories may also have configs, although the only section allowed is [Local]
 ## Starting the Server
 Once the server is ready, it can be started with 
 ```console
-python3.8 init.py
+$ python3.8 init.py
 ```
 
 # Using LosCat
