@@ -16,19 +16,19 @@ public class EditProbe extends AnAction {
         Project currentProject = event.getProject();
         String projectDirectory = currentProject.getBasePath();
         File saadDirectory = new File(projectDirectory + "/SAAD");
-        if (!saadDirectory.exists() || !saadDirectory.isDirectory()) {
+        if(!saadDirectory.exists() || !saadDirectory.isDirectory()) {
             System.err.println("SAAD directory not found - must have SAAD directory within project repository.");
             return;
         }
 
         File probeConfigs = new File(saadDirectory + "/probe_configs");
-        if (!probeConfigs.exists() || !probeConfigs.isDirectory()) {
+        if(!probeConfigs.exists() || !probeConfigs.isDirectory()){
             System.err.println("Probe configurations directory not found - must have probe_configs directory within project repository.");
         }
 
         // Iterate through probe files in probe_configs directory
         Map<String, List<SAADProbe>> probeFileMap = new HashMap<>();
-        for (File file : probeConfigs.listFiles()) {
+        for(File file : probeConfigs.listFiles()) {
             // Create lists of SAADProbe objects (one for each file) (Map name to list of probes)
             probeFileMap.put(file.getName(), AddProbe.readProbeJSON(file.getPath()));
         }
@@ -42,11 +42,11 @@ public class EditProbe extends AnAction {
         EditProbeDialog editProbeDialog = new EditProbeDialog(currentProject, probesToEdit);
         editProbeDialog.show();
         // Write Probe File (Overwrite)
-        if (editProbeDialog.getExitCode() != DialogWrapper.OK_EXIT_CODE) {
+        if(editProbeDialog.getExitCode() != DialogWrapper.OK_EXIT_CODE) {
             return;
         }
 
-        if (AddProbe.generateProbeJSON(editProbeDialog.getProbes(), saadDirectory + "/probe_configs/" + fileName)) {
+        if(AddProbe.generateProbeJSON(editProbeDialog.getProbes(), saadDirectory + "/probe_configs/" + fileName)) {
             ProbeConfirmationDialog probeConfirmationDialog = new ProbeConfirmationDialog();
             probeConfirmationDialog.show();
         }

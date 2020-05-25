@@ -5,6 +5,9 @@ import javax.annotation.Nullable;
 import javax.swing.*;
 import java.awt.*;
 
+/*
+Simple Dialog for user to enter name for probe file.
+ */
 public class NameProbeFileDialog extends DialogWrapper {
 
     private EditorTextField textField;

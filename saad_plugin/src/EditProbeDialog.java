@@ -13,6 +13,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/*
+Dialog for editing probe files.
+ */
+
 public class EditProbeDialog extends DialogWrapper {
 
     private class ProbeInterface {
@@ -34,6 +38,12 @@ public class EditProbeDialog extends DialogWrapper {
     private List<ProbeInterface> probeFields;
     private Project currentProject;
 
+    /*
+    * Constructor for edit probe dialog.
+    *
+    * @param currentProject     The IDEA project for which LOSCAT is implemented.
+    * @param probesToEdit       The probes in the probe file being edited. Used to generate editable text fields.
+     */
     public EditProbeDialog(Project currentProject, List<SAADProbe> probesToEdit) {
         super(true);
 
@@ -50,7 +60,7 @@ public class EditProbeDialog extends DialogWrapper {
 
         dialogPanel.setLayout(new GridLayout(0, 2));
 
-        for (SAADProbe probe : this.probes) {
+        for(SAADProbe probe : this.probes) { // Iterate through probe list and create editable text fields for each of their parameters
             ProbeInterface probeInterface = new ProbeInterface(probe.getType());
             this.probeFields.add(probeInterface);
             JLabel nameLabel = new JLabel("Probe Name");
@@ -72,6 +82,8 @@ public class EditProbeDialog extends DialogWrapper {
                     dialogPanel.add(textField);
                 }
             }
+
+            // Add text field with browser button if the probe requires a file (should not add if no parameter requires a file path)
             if (probeInterface.specifyFile) {
                 JLabel label = new JLabel("File");
                 dialogPanel.add(label);
@@ -101,7 +113,7 @@ public class EditProbeDialog extends DialogWrapper {
             String name = probeInterface.nameField.getText();
             String type = probeInterface.probeType;
             Map<String, String> config = new HashMap<>();
-            for (String parameter : probeInterface.parameterEntries.keySet()) {
+            for(String parameter : probeInterface.parameterEntries.keySet()) {
                 config.put(parameter, probeInterface.parameterEntries.get(parameter).getText());
             }
             this.probes.add(new SAADProbe(name, type, config));

@@ -12,10 +12,10 @@ public class ModuleSelectDialog extends DialogWrapper {
     private ComboBox<String> moduleSelectField;
 
     public ModuleSelectDialog(List<SAADModule> moduleList) {
-        super(true);
-        this.moduleList = moduleList;
-        init();
-        setTitle("Select Module");
+       super(true);
+       this.moduleList = moduleList;
+       init();
+       setTitle("Select Module");
     }
 
     protected JComponent createCenterPanel() {

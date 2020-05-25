@@ -22,7 +22,7 @@ public class AddProbeDialog extends DialogWrapper {
     private Project currentProject;
     private SAADModule probeType;
     private boolean specifyFile;
-    private Map<String, ComboBox> parameterEntries;
+    private Map<String, ComboBox>  parameterEntries;
     private TextFieldWithBrowseButton targetFile;
     private List<String> referenceProbes;
     private EditorTextField nameField;
@@ -56,10 +56,10 @@ public class AddProbeDialog extends DialogWrapper {
         dialogPanel.add(nameField);
 
         for (String parameter : probeType.getParameters()) {
-            if (parameter.toLowerCase().equals("file")) {
+            if(parameter.toLowerCase().equals("file")) {
                 this.specifyFile = true;
-            } else if (!parameter.toLowerCase().equals("head") && !parameter.toLowerCase().equals("head~1")) {
-                JLabel label = new JLabel(parameter.substring(0, 1).toUpperCase() + parameter.substring(1));
+            } else if(!parameter.toLowerCase().equals("head") && !parameter.toLowerCase().equals("head~1")) {
+                JLabel label = new JLabel(parameter.substring(0,1).toUpperCase() + parameter.substring(1));
                 dialogPanel.add(label);
                 ComboBox textField = new ComboBox(referenceProbes.toArray());
                 textField.setEditable(true);
@@ -70,7 +70,7 @@ public class AddProbeDialog extends DialogWrapper {
                 dialogPanel.add(textField);
             }
         }
-        if (this.specifyFile) {
+        if(this.specifyFile) {
             JLabel label = new JLabel("File");
             dialogPanel.add(label);
             this.targetFile = new TextFieldWithBrowseButton();
