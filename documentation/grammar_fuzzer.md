@@ -15,25 +15,24 @@ The grammar fuzzer module (named `grammarFuzz`) takes three arguments:
 3. `executeFile`: The path of the file which will be executed by the fuzzer. The generated input will be piped in via STDIN. The file will be executed once for every generated input. The file should be executable (you might have to run `chmod +x <filename>` to flag it as executable).
 
 Here's an example probe using this module (taken from the example repo):
-
-```
+```json
 [
-	{
-		"name": "fuzzOutput",
-		"type": "grammarFuzz",
-		"config": {
-			"grammarFile": "POSTFIX_CALC.g4",
-			"entryRule": "expr",
-			"executeFile": "postfix_calculator.py"
-		}
-	},
-	{
-		"type": "slackBotSimple",
-		"config": {
-			"channel": "monitoring-slack-test-public",
-			"message": "{fuzzOutput}"
-		}
-	}
+  {
+    "name": "fuzzOutput",
+    "type": "grammarFuzz",
+    "config": {
+      "grammarFile": "POSTFIX_CALC.g4",
+      "entryRule": "expr",
+      "executeFile": "postfix_calculator.py"
+    }
+  },
+  {
+    "type": "slackBotSimple",
+    "config": {
+      "channel": "monitoring-slack-test-public",
+      "message": "{fuzzOutput}"
+    }
+  }
 ]
 ```
 
@@ -58,8 +57,7 @@ ANTLR is "a powerful parser generator for reading, processing, executing, or tra
 It has a great syntax for specifying grammars, so, instead of reinventing the wheel, we support a simplified version of this syntax. This is especially useful as there is a large wealth of ANTLR4 grammars already written. We can find grammars for most popular programming languages here: https://github.com/antlr/grammars-v4. Unfortunately, most of these likely won't work as-is as they use actions or other complex ANTLR features, however the [JSON](https://github.com/antlr/grammars-v4/blob/master/json/JSON.g4) and [S-expression](https://github.com/antlr/grammars-v4/blob/master/sexpression/sexpression.g4) grammars work as-is.
 
 Here's a simple supported grammar definition (used in the example repo) for a postfix calculator language:
-
-```
+```ANTLR
 grammar POSTFIX_CALC;
 
 expr
