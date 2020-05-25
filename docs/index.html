@@ -35,10 +35,24 @@
 		<p>TODO</p>
 
 		<h2>Implementation</h2>
+		<p>Some brief details on how LosCat is implemented.</p>
+
+		<h3>Running Probes</h3>
+		<img src="./probe_dependencies.png" alt="Graph of Probe Dependencies">
+		<p>Probes are run in parallel. A dependency graph is created and each piece of the probe for which all dependencies have finished executing (or that simply has no dependencies) is executed in its own thread.</p>
 
 		<h3>Github Webhooks</h3>
 		<img src="./webhook.png" alt="Github Webhooks Diagram">
 		<p>LosCat relies upon Github webhooks in order to know when a tracked Github repository has been updated. A user simply adds our webhook endpoint (for our server it's <i>http://saad.sebastian.io/run</i>) on Github and they're up and running! Github will send an HTTP POST request to the endpoint whenever the repository is pushed to.</p>
+
+		<h3>Server Configuration</h3>
+		<p>We have an instance of LosCat running on a <i>micro</i> AWS EC2 instance. Its operating system is Amazon Linux 2, an Amazon variant of Red Hat.</p>
+		<p>LosCat is run as a <i>systemd</i> service so that it automatically restarts if it crashes or if the server reboots. The service is run as a dedicated user with reduced permissions (so that it can only modify the LosCat directory).</p>
+		<p>The web-facing part of LosCat runs on port 8080 (so as to avoid needing to be run as sudo, which is generally required for ports below 1024. We <i>firewalld</i> to then redirect port 80 to 8080.</p>
+
+		<h3>Automated Deployment</h3>
+		<p>We have automated deployment set up so that the code on the server is automatically updated whenever we push to the LosCat Github repo.</p>
+		<p>The repo has a webhook which sends a request to our server when it's updated. The LosCat service on the server then pulls the new code from Github, installs dependencies, and replaces the current process with an instance of the new code.</p>
 	</div>
 </body>
 </html>
