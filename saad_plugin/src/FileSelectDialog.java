@@ -7,21 +7,20 @@ import java.awt.*;
 import java.util.List;
 import java.util.Map;
 
-/*
-Dialog for selecting a file from probe configs.
+/**
+ * Dialog for selecting a file from probe configs.
  */
-
 public class FileSelectDialog extends DialogWrapper {
 
     private Map<String, List<SAADProbe>> probeFileMap;
     private ComboBox fileSelectField;
 
-    /*
-    * Constructor for file select dialog.
-    *
-    * @param probeFileMap   A map of probe file names to their contents as a list of probe objects.
+    /**
+     * Constructor for file select dialog.
+     *
+     * @param probeFileMap   A map of probe file names to their contents as a list of probe objects.
      */
-    public FileSelectDialog(Map<String, List<SAADProbe>> probeFileMap){
+    public FileSelectDialog(Map<String, List<SAADProbe>> probeFileMap) {
         super(true);
 
         this.probeFileMap = probeFileMap;
