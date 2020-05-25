@@ -6,11 +6,19 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+Dialog for selecting dialog of next probe to add.
+ */
 public class ModuleSelectDialog extends DialogWrapper {
 
     List<SAADModule> moduleList;
     private ComboBox<String> moduleSelectField;
 
+    /*
+    * Constructor for module select dialog.
+    *
+    * @param moduleList     list of module objects available to be selected
+     */
     public ModuleSelectDialog(List<SAADModule> moduleList) {
        super(true);
        this.moduleList = moduleList;

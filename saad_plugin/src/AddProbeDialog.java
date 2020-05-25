@@ -14,8 +14,13 @@ import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 
+/*
+Dialog for adding a probe of a given type.
+ */
+
 public class AddProbeDialog extends DialogWrapper {
 
+    // Rename exit codes to correspond with dialog buttons
     public static final int ADD_ANOTHER_PROBE_EXIT_CODE = DialogWrapper.CANCEL_EXIT_CODE;
     public static final int FINISH_EXIT_CODE = DialogWrapper.OK_EXIT_CODE;
 
@@ -27,6 +32,13 @@ public class AddProbeDialog extends DialogWrapper {
     private List<String> referenceProbes;
     private EditorTextField nameField;
 
+    /*
+    * Constructor for add probe dialog.
+    *
+    * @param currentProject     The IDEA project for which LOSCAT is implemented
+    * @param probeType          The module associated with the probe being added.
+    * @param referenceProbes    A list of probes already defined in the current probe file which might be referenced by the current probe.
+     */
     public AddProbeDialog(Project currentProject, SAADModule probeType, List<String> referenceProbes) {
         super(true); // use current window as parent
 
@@ -55,6 +67,8 @@ public class AddProbeDialog extends DialogWrapper {
         nameLabel.setLabelFor(this.nameField);
         dialogPanel.add(nameField);
 
+        // Iterate through parameters associated with current module
+        // and add corresponding text fields
         for (String parameter : probeType.getParameters()) {
             if(parameter.toLowerCase().equals("file")) {
                 this.specifyFile = true;
@@ -70,6 +84,8 @@ public class AddProbeDialog extends DialogWrapper {
                 dialogPanel.add(textField);
             }
         }
+
+        // Add text field with browser button if one of the parameters requires a file to be added
         if(this.specifyFile) {
             JLabel label = new JLabel("File");
             dialogPanel.add(label);
