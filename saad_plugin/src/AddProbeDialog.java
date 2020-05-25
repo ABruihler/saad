@@ -14,10 +14,9 @@ import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 
-/*
-Dialog for adding a probe of a given type.
+/**
+ * Dialog for adding a probe of a given type.
  */
-
 public class AddProbeDialog extends DialogWrapper {
 
     // Rename exit codes to correspond with dialog buttons
@@ -27,17 +26,17 @@ public class AddProbeDialog extends DialogWrapper {
     private Project currentProject;
     private SAADModule probeType;
     private boolean specifyFile;
-    private Map<String, ComboBox>  parameterEntries;
+    private Map<String, ComboBox> parameterEntries;
     private TextFieldWithBrowseButton targetFile;
     private List<String> referenceProbes;
     private EditorTextField nameField;
 
-    /*
-    * Constructor for add probe dialog.
-    *
-    * @param currentProject     The IDEA project for which LOSCAT is implemented
-    * @param probeType          The module associated with the probe being added.
-    * @param referenceProbes    A list of probes already defined in the current probe file which might be referenced by the current probe.
+    /**
+     * Constructor for add probe dialog.
+     *
+     * @param currentProject  The IDEA project for which LOSCAT is implemented
+     * @param probeType       The module associated with the probe being added.
+     * @param referenceProbes A list of probes already defined in the current probe file which might be referenced by the current probe.
      */
     public AddProbeDialog(Project currentProject, SAADModule probeType, List<String> referenceProbes) {
         super(true); // use current window as parent
@@ -70,10 +69,10 @@ public class AddProbeDialog extends DialogWrapper {
         // Iterate through parameters associated with current module
         // and add corresponding text fields
         for (String parameter : probeType.getParameters()) {
-            if(parameter.toLowerCase().equals("file")) {
+            if (parameter.toLowerCase().equals("file")) {
                 this.specifyFile = true;
-            } else if(!parameter.toLowerCase().equals("head") && !parameter.toLowerCase().equals("head~1")) {
-                JLabel label = new JLabel(parameter.substring(0,1).toUpperCase() + parameter.substring(1));
+            } else if (!parameter.toLowerCase().equals("head") && !parameter.toLowerCase().equals("head~1")) {
+                JLabel label = new JLabel(parameter.substring(0, 1).toUpperCase() + parameter.substring(1));
                 dialogPanel.add(label);
                 ComboBox textField = new ComboBox(referenceProbes.toArray());
                 textField.setEditable(true);
@@ -86,7 +85,7 @@ public class AddProbeDialog extends DialogWrapper {
         }
 
         // Add text field with browser button if one of the parameters requires a file to be added
-        if(this.specifyFile) {
+        if (this.specifyFile) {
             JLabel label = new JLabel("File");
             dialogPanel.add(label);
             this.targetFile = new TextFieldWithBrowseButton();

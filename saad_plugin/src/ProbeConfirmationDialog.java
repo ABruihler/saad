@@ -4,10 +4,9 @@ import javax.annotation.Nullable;
 import javax.swing.*;
 import java.awt.*;
 
-/*
-Simple dialog to alert user that a probe configuration file was generated successfully.
+/**
+ * Simple dialog to alert user that a probe configuration file was generated successfully.
  */
-
 public class ProbeConfirmationDialog extends DialogWrapper {
 
     public ProbeConfirmationDialog() {
