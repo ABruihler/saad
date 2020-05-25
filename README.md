@@ -1,10 +1,10 @@
-# SAAD
+# LosCat
 
 A code monitoring tool being developed by students at Carleton College.
 
 Additional documentation can be found under `/documentation/`.
 
-## Getting Started
+# Getting Started
 
 First, create virtual environment for installing dependencies:
 ```
@@ -26,8 +26,7 @@ To leave the virtual environment:
 $ deactivate
 ```
 
-## Config
-
+## Configuring the Server
 The LosCat server reads in options from a config file. By default this is SAAD\_config.cfg, but it can be specified with the --master\_config argument when starting the server. The config has the following sections:
 * Allowed Repos: a whitelist of repositories that are allowed to push to the server
 * Local: Paths containing modules, probes, and configs on the server itself
@@ -36,6 +35,34 @@ The LosCat server reads in options from a config file. By default this is SAAD\_
 Additionally, any section with the same name as an allowed repository will override the default settings for that repository.
 
 Repositories may also have configs, although the only section allowed is [Local], which refers to folders and files in the repository itself. In addition, any config field set to false in the server config is disabled in the monitored Repo.
+
+## Starting the Server
+Once the server is ready, it can be started with 
+```
+python3.8 init.py
+```
+# Using LosCat
+## Adding probes and modules
+LosCat allows users to create their own probes for monitoring specific pieces of code. These probes tell LosCat which modules to run, and can be chained together for flexibility in how you monitor code.
+In addition, users can make their own modules.
+See how to set them up in the [Adding custom probes and modules walkthrough](documentation/probe_walkthrough.md)
+
+## Built in modules
+LosCat has a few built in modules:
+* Slack Bot:
+The Slack Bot provides two modules slackBotSimple and slackBotBlocks to post messages to a Slack channel. These modules take in a channel (or member ID for direct messages) and message and will post to Slack. slackBotBlocks allows for Block-Kit formatted Slack messages. See the example probes for usage guidelines
+* Grammar Fuzzer:
+Allows generating random input to feed into test from an ANTLR grammar specification. For more details, see the [grammar fuzzer walkthrough](documentation/grammar_fuzzer.md)
+* AST code finder:
+Uses Abstract Syntax Trees to allow monitoring python functions and classes instead of just files. For more details, see the [code finder documenation](documentation/python_code_finder.md)
+
+## Web Interface
+The LosCat server also provides a web interface, so that you can get information about modules and probes on the server. See the [website walkthrough](documentaion/website.md) for a more complete description
+
+## IDE Plugin
+To make it easier to make probes, LosCat also includes a JetBrains IDE plugin. For more info, see the documentation [here](documentation/ide_plugin.md)
+
+# Developing LosCat
 
 ## Testing Locally
 
@@ -49,7 +76,7 @@ $ curl --header "Content-Type: application/json" \
     http://localhost:8080/run
 ```
 
-## Setting up Server
+## Deploying LosCat on Amazon EC2
 
 Command for connecting to server:
 ```
@@ -96,16 +123,4 @@ $ sudo yum install openssl-devel
 $ cd /home/ec2-user/Python-3.8.1/
 $ sudo ./configure --enable-optimizations
 $ sudo make install
-```
-
-### Ideas for AST
-
-I'm brainstorming syntax for specifying AST location (currently just for Python). Currently, I'm considering the following syntax:
-```
-class(TestClass) # matches class(es) named TestClass
-func(simple_function) # matches functions named simple_function
-
-class(TestClass) func(simple_function) # only functions inside the class
-class(TestClass) > func(simple_function) # only functions that are direct children of class (class methods)
-> func(simple_function) # only global functions (direct children of root)
 ```
