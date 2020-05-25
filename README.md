@@ -11,9 +11,9 @@ Additional documentation can be found under [/documentation/](./documentation/):
 - [Python Code Finder](./documentation/python_code_finder.md)
 - [Website](./documentation/website.md)
 
-Also look at our [project website](https://skimberk.github.io/saad/)
+You can also check out the project website [here](https://skimberk.github.io/saad/). The code for this website is in [docs/](./docs/) and is hosted by Github (hence why it has the rather unfortunate name "docs").
 
-# Getting Started
+## Getting Started
 
 First, create virtual environment for installing dependencies:
 ```console
