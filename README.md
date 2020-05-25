@@ -26,6 +26,17 @@ To leave the virtual environment:
 $ deactivate
 ```
 
+## Config
+
+The LosCat server reads in options from a config file. By default this is SAAD\_config.cfg, but it can be specified with the --master\_config argument when starting the server. The config has the following sections:
+* Allowed Repos: a whitelist of repositories that are allowed to push to the server
+* Local: Paths containing modules, probes, and configs on the server itself
+* Repo: Default paths to look for probes, modules and configs within a monitored repo
+
+Additionally, any section with the same name as an allowed repository will override the default settings for that repository.
+
+Repositories may also have configs, although the only section allowed is [Local], which refers to folders and files in the repository itself. In addition, any config field set to false in the server config is disabled in the monitored Repo.
+
 ## Testing Locally
 
 ### Making a fake Github webhook request
