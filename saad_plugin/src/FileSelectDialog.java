@@ -12,7 +12,7 @@ public class FileSelectDialog extends DialogWrapper {
     private Map<String, List<SAADProbe>> probeFileMap;
     private ComboBox fileSelectField;
 
-    public FileSelectDialog(Map<String, List<SAADProbe>> probeFileMap){
+    public FileSelectDialog(Map<String, List<SAADProbe>> probeFileMap) {
         super(true);
 
         this.probeFileMap = probeFileMap;

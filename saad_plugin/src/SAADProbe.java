@@ -3,7 +3,7 @@ import java.util.Map;
 public class SAADProbe {
     private String name;
     private String type;
-    private Map<String, String>config;
+    private Map<String, String> config;
 
     public SAADProbe() {
         super();
@@ -23,10 +23,12 @@ public class SAADProbe {
         return config;
     }
 
-    public String getName() { return name; }
+    public String getName() {
+        return name;
+    }
 
     public boolean removeCondition() {
-        if(!config.containsKey("condition")) {
+        if (!config.containsKey("condition")) {
             return false;
         }
         config.remove("condition");

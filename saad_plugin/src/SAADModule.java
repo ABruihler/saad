@@ -21,7 +21,7 @@ public class SAADModule {
 
     public void setParametersFromCommand(String command) {
         Matcher m = Pattern.compile("\\{([^}]+)\\}").matcher(command);
-        while(m.find()) {
+        while (m.find()) {
             parameters.add(m.group(1));
         }
     }

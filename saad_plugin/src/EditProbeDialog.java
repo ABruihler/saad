@@ -50,7 +50,7 @@ public class EditProbeDialog extends DialogWrapper {
 
         dialogPanel.setLayout(new GridLayout(0, 2));
 
-        for(SAADProbe probe : this.probes) {
+        for (SAADProbe probe : this.probes) {
             ProbeInterface probeInterface = new ProbeInterface(probe.getType());
             this.probeFields.add(probeInterface);
             JLabel nameLabel = new JLabel("Probe Name");
@@ -101,7 +101,7 @@ public class EditProbeDialog extends DialogWrapper {
             String name = probeInterface.nameField.getText();
             String type = probeInterface.probeType;
             Map<String, String> config = new HashMap<>();
-            for(String parameter : probeInterface.parameterEntries.keySet()) {
+            for (String parameter : probeInterface.parameterEntries.keySet()) {
                 config.put(parameter, probeInterface.parameterEntries.get(parameter).getText());
             }
             this.probes.add(new SAADProbe(name, type, config));
