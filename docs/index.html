@@ -7,41 +7,55 @@
 	<link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-<div class="wrap">
-	<div class="intro">
-		<div class="title">LosCat</div>
-		<div class="description">A Tool for Source Code Monitoring</div>
-		<a href="https://github.com/skimberk/saad" class="github">View on Github</a>
+	<div class="wrap">
+		<div class="intro">
+			<div class="title">LosCat</div>
+			<div class="description">A Tool for Source Code Monitoring</div>
+			<a href="https://github.com/skimberk/saad" class="github">View on Github</a>
+		</div>
+
+		<p>LosCat is a tool for source code monitoring developed by four students at Carleton College towards completion of their senior integrative exercise (colloquially known as "comps") for computer science. The aforementioned students are Anders Bruihler, Ari Conati, Sebastian Kimberk, and David White.</p>
+		<p>This webpage gives an outline of the tool, for more detailed documentation check out the <a href="https://github.com/skimberk/saad/blob/master/README.md">documentation on our repo</a>. You can also view a <a href="./loscat_presentation.pdf">PDF of our final presentation</a>.</p>
+
+		<h2>Our Objective</h2>
+		<p>The objective of LosCat is to be a tool that allows actions to be automatically run on user code in order to improve the code development process. This is intentionally vague, as we have written LosCat so that it can be easily extended and used in a variety of ways.</p>
+		<img src="./project_structure.png" alt="Overall Project Structure">
+		<p>The tool monitors code in users' Github repositories by running "probes" that are written by the user (and held within their own repository). These "probes" make use of "modules" which are contained within the LosCat repository (which themselves are just bash scripts that are automatically populated).</p>
+
+		<h2>Included Modules</h2>
+		<p>We have written an assortment of modules for LosCat, which can be modified or added to by end users.</p>
+
+		<h3>Slack Bot</h3>
+		<p>The Slack Bot provides two modules <code>slackBotSimple</code> and <code>slackBotBlocks</code> to post messages to a Slack channel. These modules take in a channel (or member ID for direct messages) and message and will post to Slack. <code>slackBotBlocks</code> allows for <a href="https://api.slack.com/block-kit">Block-Kit</a> formatted Slack messages. See the example probes for usage guidelines</p>
+
+		<h3>Python Code Finder</h3>
+		<p>Finds specific code blocks in Python code and outputs their location. Check out the repo documentation <a href="https://github.com/skimberk/saad/blob/master/documentation/python_code_finder.md">here</a> for more information.</p>
+
+		<h3>Grammar Fuzzer</h3>
+		<p>Automated program fuzzing with input generated following a provided grammar definition (specified using the ANTLR4 format). Check out the repo documentation <a href="https://github.com/skimberk/saad/blob/master/documentation/grammar_fuzzer.md">here</a> for more information.</p>
+
+		<h2>Implementation</h2>
+		<p>Some brief details on how LosCat is implemented.</p>
+
+		<h3>Custom Probe/Module Walkthrough</h3>
+		<p>See <a href="https://github.com/skimberk/saad/blob/master/documentation/probe_walkthrough.md">documentation/probe_walkthrough.md</a> for a walkthrough of creating a probe and associated modules.</p>
+
+		<h3>Running Probes</h3>
+		<img src="./probe_dependencies.png" alt="Graph of Probe Dependencies">
+		<p>Probes are run in parallel. A dependency graph is created and each piece of the probe for which all dependencies have finished executing (or that simply has no dependencies) is executed in its own thread.</p>
+
+		<h3>Github Webhooks</h3>
+		<img src="./webhook.png" alt="Github Webhooks Diagram">
+		<p>LosCat relies upon Github webhooks in order to know when a tracked Github repository has been updated. A user simply adds our webhook endpoint (for our server it's <i>http://saad.sebastian.io/run</i>) on Github and they're up and running! Github will send an HTTP POST request to the endpoint whenever the repository is pushed to.</p>
+
+		<h3>Server Configuration</h3>
+		<p>We have an instance of LosCat running on a <i>micro</i> AWS EC2 instance. Its operating system is Amazon Linux 2, an Amazon variant of Red Hat.</p>
+		<p>LosCat is run as a <i>systemd</i> service so that it automatically restarts if it crashes or if the server reboots. The service is run as a dedicated user with reduced permissions (so that it can only modify the LosCat directory).</p>
+		<p>The web-facing part of LosCat runs on port 8080 (so as to avoid needing to be run as sudo, which is generally required for ports below 1024. We <i>firewalld</i> to then redirect port 80 to 8080.</p>
+
+		<h3>Automated Deployment</h3>
+		<p>We have automated deployment set up so that the code on the server is automatically updated whenever we push to the LosCat Github repo.</p>
+		<p>The repo has a webhook which sends a request to our server when it's updated. The LosCat service on the server then pulls the new code from Github, installs dependencies, and replaces the current process with an instance of the new code.</p>
 	</div>
-
-	<p>LosCat is a tool for source code monitoring developed by four students at Carleton College towards completion of their senior integrative exercise (colloquially known as "comps") for computer science. The aforementioned students are Anders Bruihler, Ari Conati, Sebastian Kimberk, and David White.</p>
-	<p>This webpage gives an outline of the tool, for more detailed documentation check out the <a href="https://github.com/skimberk/saad/tree/master/documentation">documentation on our repo</a>. You can also view a <a href="./loscat_presentation.pdf">PDF of our final presentation</a>.</p>
-
-	<h2>Our Objective</h2>
-	<p>The objective of LosCat is to be a tool that allows actions to be automatically run on user code in order to improve the code development process. This is intentionally vague, as we have written LosCat so that it can be easily extended and used for a wide array of uses.</p>
-	<img src="./project_structure.png" alt="Overall Project Structure">
-	<p>The tool monitors code in users' Github repositories by running "probes" that are written by the user (and held within their own repository). These "probes" make use of "modules" which are contained within the LosCat repository (which themselves are just bash scripts that are automatically populated).</p>
-
-	<h2>Included Modules</h2>
-	<p>We have written an assortment of modules for LosCat, which can be modified or added to by end users.</p>
-
-	<h3>Slack Bot</h3>
-	<p>The Slack Bot provides two modules <code>slackBotSimple</code> and <code>slackBotBlocks</code> to post messages to a Slack channel. These modules take in a channel (or member ID for direct messages) and message and will post to Slack. <code>slackBotBlocks</code> allows for <a href="https://api.slack.com/block-kit">Block-Kit</a> formatted Slack messages. See the example probes for usage guidelines</p>
-
-	<h3>Python Code Finder</h3>
-	<p>TODO</p>
-
-	<h3>Grammar Fuzzer</h3>
-	<p>TODO</p>
-
-	<h3>Custom Probe/Module Walkthrough</h3>
-	<p>See <a href="https://github.com/skimberk/saad/blob/master/documentation/probe_walkthrough.md">documentation/probe_walkthrough.md</a> for a walkthrough of creating a probe and associated modules.</p>
-
-	<h2>Implementation</h2>
-
-	<h3>Github Webhooks</h3>
-	<img src="./webhook.png" alt="Github Webhooks Diagram">
-	<p>LosCat relies upon Github webhooks in order to know when a tracked Github repository has been updated. A user simply adds our webhook endpoint (for our server it's <i>http://saad.sebastian.io/run</i>) on Github and they're up and running! Github will send an HTTP POST request to the endpoint whenever the repository is pushed to.</p>
-</div>
 </body>
 </html>

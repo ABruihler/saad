@@ -1,8 +1,15 @@
-# LosCat
+# LosCat (aka SAAD)
 
 A code monitoring tool being developed by students at Carleton College.
 
-Additional documentation can be found under `/documentation/`.
+Additional documentation can be found under [/documentation/](./documentation/):
+
+- [Background](./documentation/background.md)
+- [Grammar Fuzzer](./documentation/grammar_fuzzer.md)
+- [IDE Plugin](./documentation/ide_plugin.md)
+- [Probe Walkthrough](./documentation/probe_walkthrough.md)
+- [Python Code Finder](./documentation/python_code_finder.md)
+- [Website](./documentation/website.md)
 
 # Getting Started
 
