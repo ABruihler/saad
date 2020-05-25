@@ -12,7 +12,7 @@ The grammar fuzzer module (named `grammarFuzz`) takes three arguments:
 
 2. `entryRule`: The name of the "root" ANTLR rule (from the `grammarFile`). This is the rule from which the fuzzer will generate input.
 
-3. `executeFile`: The path of the file which will be executed by the fuzzer. The generated input will be piped in via STDIN. The file will be executed once for every generated input. The file should be executable (you might have to run `chmod +x <filename>` to mark it executable).
+3. `executeFile`: The path of the file which will be executed by the fuzzer. The generated input will be piped in via STDIN. The file will be executed once for every generated input. The file should be executable (you might have to run `chmod +x <filename>` to flag it as executable).
 
 Here's an example probe using this module (taken from the example repo):
 
@@ -36,6 +36,10 @@ Here's an example probe using this module (taken from the example repo):
 	}
 ]
 ```
+
+## Module Output
+
+TODO
 
 ## Iterations and Max Depth
 
@@ -83,3 +87,7 @@ fragment EXP
    : [Ee] [+\-]? INT
    ;
 ```
+
+## Attribution
+
+The grammar fuzzer was developed by Sebastian Kimberk. It is heavily inspired by the open source [grammarinator](https://github.com/renatahodovan/grammarinator) project by Renáta Hodován.
