@@ -14,22 +14,22 @@ Additional documentation can be found under [/documentation/](./documentation/):
 # Getting Started
 
 First, create virtual environment for installing dependencies:
-```
+```console
 $ python3 -m venv env
 ```
 
 Then, activate the virtual environment. You will do this whenever you start working on the project:
-```
+```console
 $ source env/bin/activate
 ```
 
 To install dependencies:
-```
+```console
 $ python3 -m pip install -r requirements.txt
 ```
 
 To leave the virtual environment:
-```
+```console
 $ deactivate
 ```
 
@@ -45,9 +45,10 @@ Repositories may also have configs, although the only section allowed is [Local]
 
 ## Starting the Server
 Once the server is ready, it can be started with 
-```
+```console
 python3.8 init.py
 ```
+
 # Using LosCat
 ## Adding probes and modules
 LosCat allows users to create their own probes for monitoring specific pieces of code. These probes tell LosCat which modules to run, and can be chained together for flexibility in how you monitor code.
@@ -76,7 +77,7 @@ To make it easier to make probes, LosCat also includes a JetBrains IDE plugin. F
 ### Making a fake Github webhook request
 
 Start the server then run the following command in your terminal (in the `saad` directory):
-```
+```console
 $ curl --header "Content-Type: application/json" \
     --request POST \
     --data-binary "@sample_webhook_request.json" \
@@ -86,12 +87,12 @@ $ curl --header "Content-Type: application/json" \
 ## Deploying LosCat on Amazon EC2
 
 Command for connecting to server:
-```
+```console
 $ ssh -i /Users/skimberk1/Downloads/comps-project-aws.pem ec2-user@ec2-52-14-246-137.us-east-2.compute.amazonaws.com
 ```
 
 Print service logs (same as what you get by visiting `/logs`):
-```
+```console
 $ journalctl -n 500 --no-pager -u saad_python_service.service
 ```
 
@@ -102,7 +103,7 @@ Used this documentation for forwarding port 80 to 8080:
 <https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/security_guide/sec-port_forwarding>
 
 Commands used to set up server:
-```
+```console
 $ sudo firewalld
 $ sudo firewall-cmd --add-forward-port=port=80:proto=tcp:toport=8080
 $ sudo firewall-cmd --runtime-to-permanent
@@ -115,7 +116,7 @@ $ sudo systemctl start saad_python_service
 ```
 
 To update server code and restart service:
-```
+```console
 $ cd /home/saad_python_service/saad/
 $ sudo -u saad_python_service git pull
 $ sudo systemctl daemon-reload
@@ -123,7 +124,7 @@ $ sudo systemctl restart saad_python_service
 ```
 
 To install Python (from source, since `yum` didn't have 3.8):
-```
+```console
 $ sudo yum install libffi-devel # Necessary to install psutils (fixes _ctypes error)
 $ sudo yum install sqlite-devel # Necessary to have sqlite in Python
 $ sudo yum install openssl-devel
