@@ -1,0 +1,39 @@
+html, body {
+	margin: 0;
+	padding: 0;
+	font-size: 18px;
+	font-family: sans-serif;
+	line-height: 1.2;
+	-webkit-text-size-adjust: 100%;
+}
+
+.wrap {
+	position: relative;
+	max-width: 800px;
+	padding: 0 20px;
+	margin: 0 auto;
+}
+
+.intro {
+	position: relative;
+	padding: 20px 0;
+	border-bottom: 1px solid #ddd;
+}
+
+.intro .title {
+	font-size: 32px;
+}
+
+.intro .description {
+	font-size: 24px;
+}
+
+.intro .github {
+	position: absolute;
+	top: 20px;
+	right: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	font-weight: normal;
+}
