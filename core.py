@@ -26,6 +26,16 @@ def split_config_list(string):
 # -> "Hello Bob"
 # Variables with no corresponding value are left as is (i.e. "{variable}")
 def insert_named_values(string, values):
+    """
+    Replace curly-brace surrounded variables with
+    the corresponding value in values
+    :param string: the string to insert into
+    :param values: the values to insert
+    :return: The input string with all of the values replaced
+    Example: insert_named_valued("Hello {name}", {'name': "'Bob"})
+    -> "Hello Bob"
+    Variables with no corresponding value are left as is (i.e. "{variable}")
+    """
     return re.sub(r'{([a-zA-Z0-9_~]+)}', lambda m: swap_named_value(m, values), str(string))
 
 
@@ -63,9 +73,15 @@ def parse_json_file(file_path):
     return json.loads(probe_file_contents)
 
 
+
 # Easy way to recursively iterate over all json files in a directory
 # Usage: for parsed_json in all_json_in_dir(path):
 def all_json_in_dir(dir_path):
+    """
+    Easy way to recursively iterate over all json files in a directory
+    :param dir_path: the directory to recursively search
+    :return: a dictionary of parsed json dictionaries, one per file
+    """
     # Search recursively in order to allow user to decide
     # their preferred method of organization
     pathlist = Path(dir_path).glob("**/*.json")
@@ -73,15 +89,10 @@ def all_json_in_dir(dir_path):
         parsed = parse_json_file(str(path))
         yield parsed
 
-
-def get_all_probes():
-    probe_list_lock.acquire()
-    out = probe_list.copy()
-    probe_list_lock.release()
-    return out
-
-
 def connect_database(path):
+    """
+    Connect to the sqlite database at path
+    """
     connection = None
     if path is None:
         return None
@@ -94,6 +105,9 @@ def connect_database(path):
 
 
 def init_user_database(db):
+    """
+    Initialize an sqlite database to keep track of users, if one doesn't exist. Currently unused
+    """
     cursor = db.cursor()
     tables_schema['users'] = 'CREATE TABLE users(id INTEGER, hash INTEGER, PRIMARY KEY(id ASC));'
     tables_schema['repos'] = 'CREATE TABLE repos(id INTEGER, name TEXT, url TEXT, PRIMARY KEY(id ASC));'
@@ -110,6 +124,9 @@ def init_user_database(db):
 
 
 def init_database(db):
+    """
+    Initialize an sqlite database to keep track of probes that have run, if one doesn't exist
+    """
     cursor = db.cursor()
     tables_schema = {}
     tables_schema[
@@ -128,10 +145,16 @@ def init_database(db):
 
 
 class Scope:
+    """
+    Manages bindings and ensures that probes run after the probes they depend on
+    """
     def __init__(self, bindings):
+        """
+        Create an instance with the given bindings
+        """
+        #Lock used due to multithreading
         self.lock = threading.Lock()
         self.lock.acquire()
-        #print("Init grabbed scope lock")
         self.bindings = {}
         for binding in bindings.keys():
             self.bindings[binding] = bindings[binding]
@@ -147,15 +170,19 @@ class Scope:
         self.lock.release()
 
     def bind_vars(self, bindings):
+        """
+        Make new bindings for the given bindings
+        """
         self.lock.acquire()
-        #print("Binding grabbed scope lock")
         for binding in bindings.keys():
             self.bindings[binding] = bindings[binding]
         self.lock.release()
 
     def add_probe(self, probe, name=None):
+        """
+        Add a Probe object to the list of probes in this scope
+        """
         self.lock.acquire()
-        #print("Adding grabbed scope lock")
         internal_name = len(self.probes)
         self.probes.append(probe)
         if name is not None:
@@ -167,8 +194,10 @@ class Scope:
         self.lock.release()
 
     def register_probe_dependency(self, probe, dependency_name):
+        """
+        Set up variables such that the Probe waits for its dependency to finish
+        """
         self.lock.acquire()
-        #print("Dependency grabbed scope lock")
         dependency_name = self.probe_names[dependency_name]
         if dependency_name not in self.probes_waiting_on:
             raise ValueError("Probe " + dependency_name + "not found")
@@ -180,20 +209,27 @@ class Scope:
         #print("Released")
 
     def update_with_result(self, probe_name, result):
+        """
+        Update the bindings with the result of a finished probe, and run any newly unblocked probes
+        """
         self.lock.acquire()
-        #print("Updating grabbed scope lock")
         self.bindings[probe_name] = result
         name = self.probe_names[probe_name]
         if name in self.probes_waiting_on:
             if len(self.probes_waiting_on[name]) != 0:
+                #Reduce the wait counts for any probes that were waiting on me
                 for probe in self.probes_waiting_on[name]:
                     self.blocking_counts[probe] -= 1
+                    #Start any probes that are now unblocked
                     if self.blocking_counts[probe] == 0:
                         thread = threading.Thread(target=self.probes[probe].run, args=())
                         thread.start()
         self.lock.release()
 
     def get(self, lookup):
+        """
+        Getter for bindings
+        """
         if lookup in self.bindings:
             return True, self.bindings[lookup]
         if lookup not in self.probe_names:
@@ -201,6 +237,9 @@ class Scope:
         return True, None
 
     def get_dependencies(self, string):
+        """
+        Get all of the values that still have not been bound
+        """
         matches = re.finditer(r'{([a-zA-Z0-9_~]+)}', str(string))
         dependencies = []
         for match in matches:
@@ -214,6 +253,9 @@ class Scope:
 
 
 class Repo:
+    """
+    Class for managing Repositories and configuration files
+    """
     # Checks that a config value won't be overwritten improperly
     def __update_config_vals__(self, vals, append=True, overwrite=False):
         for key in vals:
@@ -235,6 +277,9 @@ class Repo:
                 self.config[key] = vals[key]
 
     def __init__(self, repo_path, repo_name, root_dir, parent_repo=None):
+        """
+        Initialize the repository and load the starting config files in.
+        """
         self.repo = repo_path
         self.name = repo_name
         self.commits = {}
@@ -268,6 +313,9 @@ class Repo:
                         self.inherited_config[key] = self.parent.config[self.name][key]
 
     def load_config_recursive(self, path, commit=None, start=False):
+        """
+        Loads all configs, even those defined in another config.
+        """
         print("Loading config " + path)
         if not start:
             self.load_config(path, commit)
@@ -284,6 +332,9 @@ class Repo:
                 self.load_config_recursive(split_config_list(self.config['configfiles'])[0], commit, False)
 
     def load_config(self, path, commit=None):
+        """
+        Load a single config, ensuring that parent values override properly
+        """
         saad_config = {}
         config_parser = configparser.ConfigParser()
         if commit is not None:
@@ -316,6 +367,9 @@ class Repo:
         os.chdir(self.config['root_path'])
 
     def reload_all_modules(self, commit=None):
+        """
+        Get all of the modules for this repo at a given commit
+        """
         self.modules = {}
         if self.parent:
             for module in self.parent.modules:
@@ -325,6 +379,9 @@ class Repo:
                 self.load_modules(path.strip(), commit)
 
     def load_modules(self, path, commit=None):
+        """
+        Load all of the modules at a given file path.
+        """
         if commit is not None:
             path = os.path.join(os.path.dirname(os.path.abspath(self.commits[commit].name)), path)
         else:
@@ -337,12 +394,18 @@ class Repo:
                 self.modules[key] = Module(key, value)
 
     def get_all_probes(self):
+        """
+        Get all of the running probes for this repo
+        """
         self.probe_lock.acquire()
         out = self.running_probes.copy()
         self.probe_lock.release()
         return out
 
     def load_probe_json(self):
+        """
+        Get all of the defined probes for this repo
+        """
         if 'probefolders' not in self.config:
             print("No probes specified to run")
             return []
@@ -359,6 +422,9 @@ class Repo:
         return self.modules
 
     def get_current(self):
+        """
+        Load the most recent commit
+        """
         self.commits['current'] = tempfile.TemporaryDirectory()
         print(self.commits['current'].name)
         print("################")
@@ -369,6 +435,10 @@ class Repo:
         os.chdir(self.config['root_path'])
 
     def get_commit(self, commit_name):
+        """
+        Load the specified commit into a temp directory
+        """
+        #First load the current commit, so we can use it to parse git commit name shorthand
         if 'current' not in self.commits:
             self.get_current()
         else:
@@ -378,9 +448,12 @@ class Repo:
         if commit_name == 'current':
             return self.commits['current'].name
         commit_name = subprocess.check_output(['git', 'rev-parse', commit_name]).decode("utf-8")
+        
+        #Then check if the commit specified is already loaded
         if commit_name in self.commits:
             if os.path.isdir(self.commits[commit_name].name):
                 return self.commits[commit_name].name
+        #Load it if it isn't.
         self.commits[commit_name] = tempfile.TemporaryDirectory()
         print("################")
         print("Cloning commit " + commit_name + "...\n")
@@ -392,6 +465,9 @@ class Repo:
         return self.commits[commit_name].name
 
     def run_all_probes(self, new_commit, old_commit):
+        """
+        Run all of the probe files for this repository
+        """
         if 'probefolders' not in self.config:
             print("No probes specified to run")
             return
@@ -422,7 +498,7 @@ class Repo:
                 # Get the dependencies set
                 for probe in probes:
                     probe.prep_input_dependencies()
-                # Run probes
+                # Start all unblocked probes
                 scope.lock.acquire()
                 data = scope.blocking_counts
                 for probe_name in data.keys():
@@ -435,9 +511,12 @@ class Repo:
 
 class Probe:
     def __init__(self, data, scope, repo):
+        """
+        Initialize a probe from the JSON
+        """
+        #Lock to enforce mutual exclusion
         self.lock = threading.Lock()
         self.lock.acquire()
-        #print("init grabbed_probe_lock")
         self.module = modules[data['type']]
         self.headers = {}
         self.headers['type'] = data['type']
@@ -468,6 +547,9 @@ class Probe:
         self.lock.release()
 
     def prep_input_dependencies(self):
+        """
+        Find all of the dependencies of the probe, and register them with the scope
+        """
         self.lock.acquire()
         #print("Prep grabbed probe lock")
         for item in self.inputs.values():
@@ -481,6 +563,9 @@ class Probe:
         self.lock.release()
 
     def run(self):
+        """
+        Run the probe
+        """
         if not self.evaluate_condition():
             return
         self.lock.acquire()
@@ -499,21 +584,22 @@ class Probe:
         logging.debug('Executing command: {}'.format(populated_command))
 
         self.script = subprocess.Popen(populated_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        #Record all of the pids the probe creates, so that it can be cleaned up later.
         self.pids = [self.script.pid]
         if psutil.pid_exists(self.script.pid):
             for child in psutil.Process(self.script.pid).children(recursive=True):
                 self.pids.append(child.pid)
 
         timeout = self.inputs.get("timeout", self.module.config.get("timeout", modules.get("defaultTimeout").config))
+        
+        #Actually run the probe in the command line
         try:
             if timeout > 0:
                 self.output, self.error = self.script.communicate(timeout=timeout)
             else:
                 self.output, self.error = self.script.communicate()
             self.log()
-            # Note: this doesn't seem to really work as intended, because we have shell=True in the Popen() call
-            # From what I can tell the terminate()/kill() call is called on the opened shell, not on the started commands
-            # TODO figure out a way to handle this properly and terminate the actual commands that run
+        #Timeout handler
         except subprocess.TimeoutExpired:
             self.kill()
             self.headers['status'] = "Timed Out"
@@ -549,6 +635,9 @@ class Probe:
         self.lock.release()
 
     def log(self):
+        """
+        Record the probe in the database
+        """
         global probes_db_path
         probes_db = connect_database(probe_db_path)
         if probes_db is None:
@@ -576,6 +665,9 @@ class Probe:
         probes_db.close()
 
     def kill(self):
+        """
+        Stop the probe and all processes it created
+        """
         for pid in self.pids:
             if psutil.pid_exists(pid):
                 psutil.Process(pid).kill()
@@ -585,6 +677,9 @@ class Probe:
         return
 
     def evaluate_condition(self):
+        """
+        Check that the condition for running the probe is met
+        """
         self.lock.acquire()
         if 'condition' not in self.inputs:
             self.lock.release()
@@ -602,11 +697,17 @@ class Probe:
 
 
 class Module:
+    """
+    Module class. Stores data about a module
+    """
     def __init__(self, name, config):
         self.name = name
         self.config = config  # equivalent to modules[name]
 
     def run_probe(self, probe_inputs, scope, repo):
+        """
+        Start a probe with the given inputs.
+        """
         p = Probe({"type": self.name, "config": probe_inputs}, scope, repo)
         thread = threading.Thread(target=p.run, args=())
         thread.start()
