@@ -162,6 +162,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(message.encode())
 
     def do_GET(self):
+        """
+        Handle GET requests
+        """
+        
+        #Parse any GET arguments passed in separately from the url
         url_path = urllib.parse.urlparse(self.path).path
         get_args = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         #print(urllib.parse.urlparse(self.path))
@@ -197,6 +202,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 repo = serverRepo
                 if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
                     repo = serverRepo.child_repos[get_args['repo'][0]]
+                #Create the form for running a probe from the webpage
                 for name, module in repo.modules.items():
                     data[name] = [module.config, module.get_inputs()]
                     form = '<form action="/run/module" method="post"> <input type="submit" value="' + name + '"> <input type="hidden" id="' + name + '" name="module_name" value="' + name + '">'
@@ -323,6 +329,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 db = core.connect_database(db_path)
                 cursor = db.cursor()
                 probe_list_html = ""
+                #Display probe data. Note that probes can have arbitrarily many inputs (and outputs on the database end)
                 for probe_id in cursor.execute("SELECT id FROM probes"):
                     probe_list_html += '<li><ul style="display:inline;">'
                     cursor2 = db.cursor()
@@ -378,6 +385,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
 
     def do_POST(self):
+        """
+        Handle POST requests
+        """
         if self.path == "/update" or self.path == "/run":
             # Git webhook for running SAAD on a repo
             if self.headers.get('Content-Type') != 'application/json':
@@ -406,6 +416,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                                        "\"detail\": \"Given JSON data missing expected field(s)\"}")
 
             if self.path == "/update":
+                #Auto update endpoint
                 if clone_url == SERVER_REPO_URL:
                     self.send_response(HTTPStatus.OK)
                     self.send_header('Content-Type', 'text/plain')
@@ -422,6 +433,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                                            "{\"title\": \"Invalid repo URL\","
                                                            "\"detail\": \"Will not update as the provided repo <" + clone_url + "> is not the expected server repo\"}")
             elif self.path == "/run":
+                #Run endpoint
                 repo_name = check_repo_url(clone_url)
                 if repo_name:
                     self.send_response(HTTPStatus.OK)
@@ -435,6 +447,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                                                            "{\"title\": \"Invalid repo URL\","
                                                            "\"detail\": \"Provided repo <" + clone_url + "> is not tracked.\"}")
         elif self.path == "/run/module":  # TODO API?
+            #Runs a probe with the given input data
             if self.handle_auth():
                 content_length = int(self.headers['Content-Length'])
                 body = self.rfile.read(content_length)
