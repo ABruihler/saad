@@ -46,6 +46,6 @@ More advanced editing is not currently supported. To make changes such as replac
 
 ### Screenshots
 
-![Probe Configuration](config_probes.png)
-![Module Select Dialog](module_select.png)
-![Add Probe Dialog](add_probes.png)
+![Probe Configuration](ide_plugin_config_probes.png)
+![Module Select Dialog](ide_plugin_module_select.png)
+![Add Probe Dialog](ide_plugin_add_probes.png)
