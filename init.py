@@ -21,7 +21,9 @@ from typing import Final
 import core
 
 DEFAULT_PORT: Final = 8080
-ALLOWED_REPO_URLS = {"https://github.com/skimberk/saad.git", "https://github.com/skimberk/saad_example.git", "https://github.com/skimberk/saad_fuzzer_example.git"}
+ALLOWED_REPO_URLS = {"https://github.com/skimberk/saad.git",
+                     "https://github.com/skimberk/saad_example.git",
+                     "https://github.com/skimberk/saad_fuzzer_example.git"}
 SERVER_REPO_URL: Final = "https://github.com/skimberk/saad.git"  # Server only updates from one repo
 
 parser = argparse.ArgumentParser(description="Run saad")
@@ -160,8 +162,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(message.encode())
 
     def do_GET(self):
-        url_path=urllib.parse.urlparse(self.path).path
-        get_args=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        url_path = urllib.parse.urlparse(self.path).path
+        get_args = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         #print(urllib.parse.urlparse(self.path))
         os.chdir(serverRepo.config['root_path'])
         logging.debug('Current working directory: {}'.format(os.getcwd()))
@@ -223,10 +225,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
         elif url_path[:len("/api/probes")] == "/api/probes":
             if self.handle_auth():
-                repo=False
+                repo = False
                 print(get_args)
                 if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
-                    repo=serverRepo.child_repos[get_args['repo'][0]]
+                    repo = serverRepo.child_repos[get_args['repo'][0]]
                 if repo:
                     probes = repo.load_probe_json()
                     os.chdir(serverRepo.config['root_path'])
@@ -235,19 +237,19 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.end_headers()
                     self.wfile.write(json.dumps(probes).encode())
                 else:
-                    repo=''
+                    repo = ""
                     if ('repo' in get_args):
-                        repo=get_args['repo'][0]
+                        repo = get_args['repo'][0]
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
                                                            "{\"title\": \"Invalid repo URL\","
                                                            "\"detail\": \"Provided repo <" + repo + "> is not tracked.\"}")
             return
         elif url_path[:len("/probes")] == "/probes":
             if self.handle_auth():
-                repo=False
+                repo = False
                 print(get_args)
                 if ('repo' in get_args) and get_args['repo'][0] in serverRepo.child_repos:
-                    repo=serverRepo.child_repos[get_args['repo'][0]]
+                    repo = serverRepo.child_repos[get_args['repo'][0]]
                 if repo:
                     probes = repo.load_probe_json()
                     os.chdir(serverRepo.config['root_path'])
@@ -268,9 +270,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
                         self.end_headers()
                 else:
-                    repo=''
-                    if ('repo' in get_args):
-                        repo=get_args['repo'][0]
+                    repo = ""
+                    if 'repo' in get_args:
+                        repo = get_args['repo'][0]
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,
                                                            "{\"title\": \"Invalid repo URL\","
                                                            "\"detail\": \"Provided repo <" + repo + "> is not tracked.\"}")
@@ -426,7 +428,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     self.send_header('Content-Type', 'text/plain')
                     self.end_headers()
                     self.wfile.write("Running...\n".encode())
-                    serverRepo.child_repos[repo_name].commits.pop('current',None)
+                    serverRepo.child_repos[repo_name].commits.pop('current', None)
                     return serverRepo.child_repos[repo_name].run_all_probes(current_commit, previous_commit)
                 else:
                     return self.write_json_problem_details(HTTPStatus.UNPROCESSABLE_ENTITY,

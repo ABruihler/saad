@@ -2,7 +2,6 @@ from antlr4 import *
 
 
 class LexerAdaptor(Lexer):
-
     """
       Track whether we are inside of a rule and whether it is lexical parser. _currentRuleType==Token.INVALID_TYPE
       means that we are outside of a rule. At the first sign of a rule name reference and _currentRuleType==invalid, we

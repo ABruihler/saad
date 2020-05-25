@@ -214,7 +214,6 @@ class Scope:
 
 
 class Repo:
-
     # Checks that a config value won't be overwritten improperly
     def __update_config_vals__(self, vals, append=True, overwrite=False):
         for key in vals:
@@ -347,7 +346,7 @@ class Repo:
         if 'probefolders' not in self.config:
             print("No probes specified to run")
             return []
-        output=[]
+        output = []
         for filepath in split_config_list(self.config['probefolders']):
             path = os.path.join(self.get_commit('current'), filepath)
             if not os.path.isdir(path):
