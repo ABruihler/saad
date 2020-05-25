@@ -2,7 +2,14 @@
 
 A code monitoring tool being developed by students at Carleton College.
 
-Additional documentation can be found under `/documentation/`.
+Additional documentation can be found under [/documentation/](./documentation/):
+
+- [Background](./documentation/background.md)
+- [Grammar Fuzzer](./documentation/grammar_fuzzer.md)
+- [IDE Plugin](./documentation/ide_plugin.md)
+- [Probe Walkthrough](./documentation/probe_walkthrough.md)
+- [Python Code Finder](./documentation/python_code_finder.md)
+- [Website](./documentation/website.md)
 
 ## Getting Started
 
@@ -96,16 +103,4 @@ $ sudo yum install openssl-devel
 $ cd /home/ec2-user/Python-3.8.1/
 $ sudo ./configure --enable-optimizations
 $ sudo make install
-```
-
-### Ideas for AST
-
-I'm brainstorming syntax for specifying AST location (currently just for Python). Currently, I'm considering the following syntax:
-```
-class(TestClass) # matches class(es) named TestClass
-func(simple_function) # matches functions named simple_function
-
-class(TestClass) func(simple_function) # only functions inside the class
-class(TestClass) > func(simple_function) # only functions that are direct children of class (class methods)
-> func(simple_function) # only global functions (direct children of root)
 ```
