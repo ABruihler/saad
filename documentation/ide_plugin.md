@@ -43,3 +43,9 @@ The _Tools/Configure Probes/Edit Probe_ option allows for basic editing of probe
 4. Finish and save changes.
 
 More advanced editing is not currently supported. To make changes such as replacing, removing, or adding new probes to a probe file, remake the probe file from scratch using the Add Probe option and delete the old probe file.
+
+### Screenshots
+
+![Probe Configuration](config_probes.png)
+![Module Select Dialog](module_select.png)
+![Add Probe Dialog](add_probes.png)
