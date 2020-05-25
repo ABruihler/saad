@@ -14,14 +14,30 @@
 			<a href="https://github.com/skimberk/saad" class="github">View on Github</a>
 		</div>
 
-		<h1>What is it?</h1>
-		<p>Blah blah blah.</p>
+		<p>LosCat is a tool for source code monitoring developed by four students at Carleton College towards completion of their senior integrative exercise (colloquially known as "comps") for computer science. The aforementioned students are Anders Bruihler, Ari Conati, Sebastian Kimberk, and David White.</p>
 
-		<h2>Huh? Why?</h2>
-		<p>Blah blah blah.</p>
+		<h2>Our Objective</h2>
+		<p>The objective of LosCat is to be a tool that allows actions to be automatically run on user code in order to improve the code development process. This is intentionally vague, as we have written LosCat so that it can be easily extended and used for a wide array of uses.</p>
+		<img src="./project_structure.png" alt="Overall Project Structure">
+		<p>The tool monitors code in users' Github repositories by running "probes" that are written by the user (and held within their own repository). These "probes" make use of "modules" which are contained within the LosCat repository (which themselves are just bash scripts that are automatically populated).</p>
 
-		<h3>A somewhat smaller statement</h3>
-		<p>Ok ok I think I'm starting to get it.</p>
+		<h2>Included Modules</h2>
+		<p>We have written an assortment of modules for LosCat, which can be modified or added to by end users.</p>
+
+		<h3>Slack Bot</h3>
+		<p>TODO</p>
+
+		<h3>Python Code Finder</h3>
+		<p>TODO</p>
+
+		<h3>Grammar Fuzzer</h3>
+		<p>TODO</p>
+
+		<h2>Implementation</h2>
+
+		<h3>Github Webhooks</h3>
+		<img src="./webhook.png" alt="Github Webhooks Diagram">
+		<p>LosCat relies upon Github webhooks in order to know when a tracked Github repository has been updated. A user simply adds our webhook endpoint (for our server it's <i>http://saad.sebastian.io/run</i>) on Github and they're up and running! Github will send an HTTP POST request to the endpoint whenever the repository is pushed to.</p>
 	</div>
 </body>
 </html>

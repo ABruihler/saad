@@ -16,8 +16,8 @@ html, body {
 
 .intro {
 	position: relative;
-	padding: 20px 0;
-	border-bottom: 1px solid #ddd;
+	padding: 20px 0 5px;
+	border-bottom: 1px solid #ccc;
 }
 
 .intro .title {
@@ -36,4 +36,13 @@ html, body {
 
 h1, h2, h3, h4, h5, h6 {
 	font-weight: normal;
+	border-bottom: 1px solid #ddd;
+}
+
+p {
+	line-height: 1.5;
+}
+
+img {
+	max-width: 100%;
 }
